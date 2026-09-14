@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stellar Admin — Boshqaruv Paneli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --bg:#080C0A;
+    --panel:#0E1512;
+    --surface:#121A16;
+    --surface-2:#182019;
+    --line:#20302A;
+    --green-1:#12E88B;
+    --green-2:#04A65C;
+    --mint:#BFFFDD;
+    --text:#EFFBF4;
+    --text-dim:#8AA69A;
+    --text-faint:#5C7268;
+    --warn:#FF8A65;
+    --danger:#FF6B6B;
+    --violet:#7B61FF;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
+  h1,h2,h3,.brand{font-family:'Sora',sans-serif;}
+  .app{display:flex;min-height:100vh;}
+
+  /* sidebar */
+  .sidebar{width:230px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px;padding:6px 8px 22px;}
+  .brand .dot{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--green-1),var(--green-2));display:flex;align-items:center;justify-content:center;font-size:13px;color:#05130C;}
+  .nav-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:13px;color:var(--text-dim);cursor:pointer;margin-bottom:3px;font-weight:500;}
+  .nav-link .ic{width:16px;text-align:center;}
+  .nav-link:hover{background:var(--surface);}
+  .nav-link.active{background:rgba(18,232,139,.1);color:var(--green-1);font-weight:600;}
+  .sidebar-foot{margin-top:auto;padding:12px;border-top:1px solid var(--line);font-size:11.5px;color:var(--text-faint);}
+
+  /* main */
+  .main{flex:1;padding:26px 32px;max-width:1180px;overflow-x:hidden;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;}
+  .page-h{font-size:19px;font-weight:700;margin:0;}
+  .page-sub{font-size:12.5px;color:var(--text-faint);margin-top:3px;}
+  .range-pick{display:flex;gap:6px;}
+  .range-pick span{padding:7px 13px;border-radius:8px;font-size:12px;font-weight:600;background:var(--surface);border:1px solid var(--line);color:var(--text-dim);cursor:pointer;}
+  .range-pick span.active{background:linear-gradient(135deg,var(--green-1),var(--green-2));color:#05130C;border-color:transparent;}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* dashboard */
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;}
+  .stat-lbl{font-size:11.5px;color:var(--text-faint);margin-bottom:8px;}
+  .stat-val{font-size:22px;font-weight:700;}
+  .stat-delta{font-size:11px;margin-top:6px;font-weight:600;}
+  .up{color:var(--green-1);} .down{color:var(--danger);}
+
+  .grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:20px;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;}
+  .card h3{font-size:13.5px;margin:0 0 14px;font-weight:600;}
+  .bars{display:flex;align-items:flex-end;gap:8px;height:130px;padding-top:10px;}
+  .bar{flex:1;background:linear-gradient(180deg,var(--green-1),var(--green-2));border-radius:6px 6px 0 0;position:relative;}
+  .bar span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:var(--text-faint);}
+  .top-prod{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:12.5px;}
+  .top-prod:last-child{border-bottom:none;}
+  .top-prod b{font-weight:700;color:var(--green-1);}
+
+  /* pricing */
+  .price-tabs{display:flex;gap:8px;margin-bottom:18px;}
+  .ptab{padding:8px 15px;border-radius:10px;font-size:12.5px;font-weight:600;background:var(--surface);border:1px solid var(--line);color:var(--text-dim);cursor:pointer;}
+  .ptab.active{background:rgba(18,232,139,.1);border-color:var(--green-1);color:var(--green-1);}
+  .form-row{display:flex;gap:14px;margin-bottom:14px;}
+  .field{flex:1;}
+  .field label{display:block;font-size:11.5px;color:var(--text-dim);margin-bottom:6px;}
+  .field input, .field select{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;color:var(--text);font-size:13px;font-family:'Inter';outline:none;}
+  .calc-preview{background:var(--surface-2);border:1px dashed #2A3E35;border-radius:12px;padding:14px 16px;font-size:12.5px;color:var(--text-dim);margin:16px 0;}
+  .calc-preview b{color:var(--mint);}
+  .btn{background:linear-gradient(135deg,var(--green-1),var(--green-2));color:#05130C;font-weight:700;font-size:13px;border:none;border-radius:10px;padding:10px 18px;cursor:pointer;}
+  .btn.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line);}
+  .btn.danger{background:rgba(255,107,107,.15);color:var(--danger);border:1px solid rgba(255,107,107,.3);}
+  .discount-table{width:100%;border-collapse:collapse;margin-top:6px;}
+  .discount-table th{text-align:left;font-size:11px;color:var(--text-faint);font-weight:600;padding:6px 8px;}
+  .discount-table td{padding:6px 8px;font-size:12.5px;}
+  .discount-table input{width:80px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:6px;color:var(--text);}
+
+  /* orders/users */
+  .toolbar{display:flex;gap:10px;margin-bottom:16px;}
+  .search{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 13px;font-size:13px;color:var(--text);outline:none;}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:11px;color:var(--text-faint);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);}
+  td{padding:11px 12px;font-size:12.5px;border-bottom:1px solid var(--line);}
+  tr:last-child td{border-bottom:none;}
+  .pill{font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:20px;display:inline-block;}
+  .pill.done{background:rgba(18,232,139,.14);color:var(--green-1);}
+  .pill.pending{background:rgba(255,138,101,.14);color:var(--warn);}
+  .pill.cancel{background:rgba(255,107,107,.14);color:var(--danger);}
+  .uavatar{width:26px;height:26px;border-radius:50%;background:var(--surface-2);display:inline-flex;align-items:center;justify-content:center;font-size:11px;margin-right:8px;vertical-align:middle;}
+
+  /* broadcast */
+  .segment-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .seg{padding:8px 13px;border-radius:20px;font-size:12px;font-weight:600;background:var(--surface);border:1px solid var(--line);color:var(--text-dim);cursor:pointer;}
+  .seg.active{background:rgba(18,232,139,.1);border-color:var(--green-1);color:var(--green-1);}
+  textarea{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--text);font-size:13px;font-family:'Inter';min-height:90px;resize:vertical;outline:none;}
+  .rate-note{font-size:11.5px;color:var(--text-faint);margin-top:8px;display:flex;align-items:center;gap:6px;}
+
+  /* referral & toggles */
+  .switch-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px;}
+  .switch-lbl{font-size:13px;font-weight:600;}
+  .switch-sub{font-size:11.5px;color:var(--text-faint);margin-top:3px;}
+  .toggle{width:40px;height:22px;border-radius:20px;background:var(--surface-2);position:relative;flex-shrink:0;cursor:pointer;transition:background 0.2s;}
+  .toggle.on{background:rgba(18,232,139,.25);}
+  .toggle::after{content:"";position:absolute;width:16px;height:16px;background:var(--text-faint);border-radius:50%;top:3px;left:3px;transition:left 0.2s, background 0.2s;}
+  .toggle.on::after{background:var(--green-1);left:21px;}
+
+  /* Toast */
+  .toast{
+    position:fixed;bottom:24px;right:24px;background:#12E88B;color:#05130C;padding:12px 20px;border-radius:12px;
+    font-size:13px;font-weight:700;box-shadow:0 10px 25px rgba(0,0,0,0.5);z-index:999;display:none;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="brand"><div class="dot">⭐</div>Stellar Admin</div>
+    <div class="nav-link active" data-view="dash"><span class="ic">▦</span>Statistika</div>
+    <div class="nav-link" data-view="price"><span class="ic">₮</span>Narxlar</div>
+    <div class="nav-link" data-view="orders"><span class="ic">▤</span>Buyurtmalar</div>
+    <div class="nav-link" data-view="users"><span class="ic">◐</span>Foydalanuvchilar</div>
+    <div class="nav-link" data-view="broadcast"><span class="ic">◤</span>Broadcast</div>
+    <div class="nav-link" data-view="referral"><span class="ic">↻</span>Referal</div>
+    <div class="nav-link" data-view="promos"><span class="ic">🎟</span>Promo-kodlar</div>
+    <div class="nav-link" data-view="channels"><span class="ic">📣</span>Majburiy obuna</div>
+    <div class="nav-link" data-view="payments"><span class="ic">💳</span>To'lov usullari</div>
+    <div class="nav-link" data-view="admins"><span class="ic">⚙</span>Adminlar</div>
+    <div class="sidebar-foot" id="adminSidebarFooter">Super Admin · @uzbsobirov</div>
+  </div>
+
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div class="view active" id="dash">
+      <div class="topbar">
+        <div><h1 class="page-h">Statistika</h1><div class="page-sub">Umumiy ko'rsatkichlar va savdo holati</div></div>
+        <div class="range-pick"><span class="active">Hafta</span><span>Oy</span><span>Hammasi</span></div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><div class="stat-lbl">Yangi foydalanuvchi</div><div class="stat-val" id="statNewUsers">0</div><div class="stat-delta up">↑ 18% shu haftada</div></div>
+        <div class="stat"><div class="stat-lbl">Jami savdo</div><div class="stat-val" id="statTotalSales">0 so'm</div><div class="stat-delta up">↑ 9%</div></div>
+        <div class="stat"><div class="stat-lbl">Foyda (marja)</div><div class="stat-val" id="statTotalProfit">0 so'm</div><div class="stat-delta up">↑ 12%</div></div>
+        <div class="stat"><div class="stat-lbl">Referal orqali</div><div class="stat-val" id="statRefSales">0 ta xarid</div><div class="stat-delta down">↓ 4%</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Kunlik savdo (so'nggi 7 kun)</h3>
+          <div class="bars">
+            <div class="bar" style="height:40%"><span>Se</span></div>
+            <div class="bar" style="height:55%"><span>Ya</span></div>
+            <div class="bar" style="height:35%"><span>Du</span></div>
+            <div class="bar" style="height:70%"><span>Ch</span></div>
+            <div class="bar" style="height:60%"><span>Pa</span></div>
+            <div class="bar" style="height:90%"><span>Ju</span></div>
+            <div class="bar" style="height:75%"><span>Sh</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Eng ko'p sotilgan mahsulotlar</h3>
+          <div id="topProductsList">
+            <div class="top-prod"><span>100 ⭐ Stars</span><b>412 ta</b></div>
+            <div class="top-prod"><span>Premium — 3 oy</span><b>96 ta</b></div>
+            <div class="top-prod"><span>50 ⭐ Stars</span><b>88 ta</b></div>
+            <div class="top-prod"><span>Teddy Bear sovg'a</span><b>21 ta</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Foyda hisoboti (bo'limlar bo'yicha)</h3>
+        <table>
+          <thead><tr><th>Mahsulot</th><th>Sotish narxi</th><th>Tannarx</th><th>Foyda</th></tr></thead>
+          <tbody id="breakdownTableBody">
+            <tr><td>Stars (jami)</td><td>31.4M so'm</td><td>26.8M so'm</td><td style="color:var(--green-1)">4.6M so'm</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PRICING -->
+    <div class="view" id="price">
+      <div class="topbar">
+        <div><h1 class="page-h">Narxlarni boshqarish</h1><div class="page-sub">Har bir mahsulot turi uchun bir birlik narxi asosida avtomatik hisoblash</div></div>
+        <button class="btn ghost" onclick="refreshTonRate()">↻ TON kursini yangilash</button>
+      </div>
+
+      <div class="card">
+        <h3>Stars — bir birlik narxi (Formula)</h3>
+        <div class="form-row">
+          <div class="field"><label>Tannarx (1 dona Stars, TON)</label><input type="number" step="0.0001" id="inpStarsTonCost" value="0.0021"></div>
+          <div class="field"><label>TON kursi (so'mda)</label><input type="number" id="inpTonRate" value="14800"></div>
+          <div class="field"><label>Marja (%)</label><input type="number" id="inpMargin" value="15"></div>
+        </div>
+        <div class="calc-preview" id="calcFormulaPreview">
+          1 dona Stars tannarxi ≈ <b>31 so'm</b> → marja bilan sotish narxi ≈ <b>36 so'm</b>. Masalan 100 dona = <b>3 600 so'm</b>.
+        </div>
+
+        <h3 style="margin-top:22px;">Ulgurji chegirmalar (ixtiyoriy)</h3>
+        <table class="discount-table">
+          <thead><tr><th>Miqdordan (Stars)</th><th>Chegirma (%)</th><th></th></tr></thead>
+          <tbody id="discountsTableBody">
+            <tr><td><input value="500" class="disc-min"></td><td><input value="5" class="disc-pct"></td><td style="color:var(--danger);cursor:pointer;" onclick="removeDiscountRow(this)">✕</td></tr>
+            <tr><td><input value="1000" class="disc-min"></td><td><input value="8" class="disc-pct"></td><td style="color:var(--danger);cursor:pointer;" onclick="removeDiscountRow(this)">✕</td></tr>
+          </tbody>
+        </table>
+        <button class="btn ghost" style="margin-top:10px;" onclick="addDiscountRow()">+ Chegirma qo'shish</button>
+        <div style="margin-top:20px;"><button class="btn" onclick="savePricing()">Saqlash</button></div>
+      </div>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="view" id="orders">
+      <div class="topbar">
+        <div><h1 class="page-h">Buyurtmalar</h1><div class="page-sub">Barcha xaridlar va ularning holati</div></div>
+        <button class="btn ghost" onclick="exportOrdersCSV()">⬇ CSV eksport</button>
+      </div>
+      <div class="toolbar">
+        <input class="search" id="adminOrderSearch" placeholder="Buyurtma kodi yoki mahsulot bo'yicha qidirish…">
+      </div>
+      <div class="card" style="padding:0;">
+        <table>
+          <thead><tr><th>ID</th><th>Foydalanuvchi</th><th>Mahsulot</th><th>Summa</th><th>Sana</th><th>Holat</th><th>Amal</th></tr></thead>
+          <tbody id="adminOrdersTable">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="view" id="users">
+      <div class="topbar">
+        <div><h1 class="page-h">Foydalanuvchilar</h1><div class="page-sub">Ro'yxatdan o'tgan mijozlar bazasi</div></div>
+      </div>
+      <div class="toolbar"><input class="search" id="adminUserSearch" placeholder="Ism, username yoki ID bo'yicha qidirish…"></div>
+      <div class="card" style="padding:0;">
+        <table>
+          <thead><tr><th>Foydalanuvchi</th><th>Rol</th><th>Balans</th><th>Buyurtmalar</th><th>Jami xarid</th><th>Referallar</th><th>Sana</th></tr></thead>
+          <tbody id="adminUsersTable">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BROADCAST -->
+    <div class="view" id="broadcast">
+      <div class="topbar"><div><h1 class="page-h">Broadcast (Xabarnoma)</h1><div class="page-sub">Foydalanuvchilarga ommaviy xabar yuborish</div></div></div>
+      <div class="card">
+        <h3>Auditoriya segmenti</h3>
+        <div class="segment-row" id="broadcastSegments">
+          <div class="seg active" data-seg="all">Barchasi</div>
+          <div class="seg" data-seg="non_buyers">Xarid qilmaganlar</div>
+          <div class="seg" data-seg="active">Faol foydalanuvchilar</div>
+          <div class="seg" data-seg="referral">Referal orqali kelganlar</div>
+        </div>
+        
+        <h3>Xabar yaratish usuli</h3>
+        <div class="price-tabs" id="bcModeTabs">
+          <div class="ptab active" data-mode="write">✍️ Yozish</div>
+          <div class="ptab" data-mode="forward">↪ Kanaldan forward qilish</div>
+          <div class="ptab" data-mode="postbot">🤖 PostBotdan olish</div>
+        </div>
+
+        <div id="bc-write">
+          <h3>Xabar matni</h3>
+          <textarea id="bcText" placeholder="Xabar matnini kiriting…">🎉 Ushbu hafta 100 ⭐ Stars uchun chegirma mavjud! Xaridingizni hoziroq amalga oshiring.</textarea>
+          <div class="form-row" style="margin-top:14px;">
+            <div class="field"><label>Rasm URL (ixtiyoriy)</label><input id="bcPhoto" placeholder="https://…"></div>
+            <div class="field"><label>Inline tugma matni</label><input id="bcBtnText" value="Xarid qilish"></div>
+          </div>
+        </div>
+
+        <div id="bc-forward" style="display:none;">
+          <h3>Forward manzili</h3>
+          <div class="form-row">
+            <div class="field"><label>Kanal username yoki post havolasi</label><input id="bcFwdChannel" placeholder="@stellar_news yoki t.me/stellar_news/128"></div>
+          </div>
+          <div class="calc-preview">Ko'rsatilgan kanaldagi postni tanlaganingizdan so'ng, u aynan shu ko'rinishda barcha foydalanuvchilarga copyMessage orqali yetkaziladi.</div>
+        </div>
+
+        <div id="bc-postbot" style="display:none;">
+          <h3>PostBotdan xabar olish</h3>
+          <div class="calc-preview" style="margin-top:0;">PostBot'da tayyorlagan xabaringizni <b>shu Stellar admin botiga forward qiling</b> — formatlash, rasm va tugmalari avtomatik saqlanib qoladi.</div>
+          <div style="border:1px dashed var(--line);border-radius:12px;padding:22px;text-align:center;margin-top:12px;">
+            <div style="font-size:22px;margin-bottom:8px;">📥</div>
+            <div style="font-size:12.5px;color:var(--text-dim);margin-bottom:10px;">Xabar bot ichida forward qilinganida shu yerda aks etadi.</div>
+          </div>
+        </div>
+
+        <div class="rate-note">⏱ Yuborish tezligi soniyasiga ~30 xabar bilan cheklangan — Telegram cheklovlariga to'liq mos keladi.</div>
+        <div style="margin-top:16px;display:flex;gap:10px;">
+          <button class="btn" onclick="sendBroadcast()">Yuborish</button>
+          <button class="btn ghost" onclick="alert('Xabar o\'zingizning profilingizga test tariqasida yuborildi!')">Test yuborish (o'zimga)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REFERRAL -->
+    <div class="view" id="referral">
+      <div class="topbar"><div><h1 class="page-h">Referal sozlamalari</h1><div class="page-sub">Bonus qoidalari va xavfsizlik shartlari</div></div></div>
+      <div class="card">
+        <div class="form-row">
+          <div class="field"><label>Bonus foizi (%)</label><input type="number" id="inpRefBonus" value="5"></div>
+          <div class="field"><label>Minimal xarid summasi (so'mda)</label><input type="number" id="inpRefMinPurchase" value="20000"></div>
+        </div>
+        <div class="switch-row">
+          <div><div class="switch-lbl">Avtomatik bonus berish</div><div class="switch-sub">O'chirilsa — har bir bonus admin tomonidan qo'lda tasdiqlanadi</div></div>
+          <div class="toggle on" id="togRefAuto"></div>
+        </div>
+        <div class="switch-row">
+          <div><div class="switch-lbl">Shart: taklif qilingan foydalanuvchi minimal xarid qilgandan keyin</div><div class="switch-sub">Soxta referallar va firibgarlikning oldini oladi</div></div>
+          <div class="toggle on" id="togRefRequire"></div>
+        </div>
+        <button class="btn" style="margin-top:6px;" onclick="saveReferralSettings()">Saqlash</button>
+      </div>
+    </div>
+
+    <!-- MANDATORY CHANNELS -->
+    <div class="view" id="channels">
+      <div class="topbar">
+        <div><h1 class="page-h">Majburiy obuna</h1><div class="page-sub">Foydalanuvchi botdan foydalanishdan oldin bajarishi shart bo'lgan shartlar</div></div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3>Yangi kanal aniqlash (Avtomatik)</h3>
+        <div class="calc-preview" style="margin-top:0;">Botni istalgan kanal yoki guruhingizga <b>admin</b> qilib qo'shing — bot <b>my_chat_member</b> hodisasi orqali buni avtomatik aniqlaydi va pastda "Yangi aniqlangan" sifatida ko'rsatadi.</div>
+        
+        <div id="detectedChannelsBox" style="border:1px dashed var(--green-1);border-radius:12px;padding:14px 16px;margin-top:14px;display:flex;align-items:center;gap:12px;">
+          <div style="font-size:20px;">✅</div>
+          <div style="flex:1;">
+            <div style="font-size:12.5px;font-weight:600;" id="detectedTitle">@stellar_promo — yangi aniqlandi</div>
+            <div style="font-size:11px;color:var(--text-faint);">Bot ushbu kanalda admin sifatida qo'shildi</div>
+          </div>
+          <select id="detectedReqType" style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:11.5px;padding:6px 8px;">
+            <option value="ordinary">Oddiy a'zolik</option>
+            <option value="join_request">So'rov orqali qo'shilish</option>
+          </select>
+          <button class="btn" style="padding:7px 12px;font-size:11.5px;" onclick="approveDetectedChannel()">Majburiy qilish</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3>Tashqi havola qo'shish</h3>
+        <div class="page-sub" style="margin-bottom:10px;">Telegram bo'lmagan yoki bot admin bo'lmagan resurs (Instagram, YouTube, veb-sayt va h.k.) — a'zolik avtomatik tekshirilmaydi, bosilgach bajarilgan hisoblanadi (soft shart).</div>
+        <div class="form-row">
+          <div class="field"><label>Havola URL</label><input id="extLinkUrl" placeholder="https://instagram.com/stellar_app"></div>
+          <div class="field"><label>Ko'rsatiladigan nom</label><input id="extLinkTitle" placeholder="Instagram sahifamiz"></div>
+        </div>
+        <button class="btn" style="margin-top:6px;" onclick="addExternalChannel()">+ Havolani qo'shish</button>
+      </div>
+
+      <div class="card" style="padding:0;">
+        <table>
+          <thead><tr><th>Nomi</th><th>Turi</th><th>Tekshirish</th><th>Faollik</th><th>Amal</th></tr></thead>
+          <tbody id="channelsTableBody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PROMO CODES -->
+    <div class="view" id="promos">
+      <div class="topbar">
+        <div><h1 class="page-h">Promo-kodlar</h1><div class="page-sub">Chegirma va bonus promo-kodlarini boshqarish</div></div>
+        <button class="btn" onclick="openPromoModal()">＋ Yangi Promo-kod</button>
+      </div>
+
+      <div class="card" style="padding:0;margin-bottom:20px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Kod</th>
+              <th>Turi</th>
+              <th>Qiymati</th>
+              <th>Ishlatilgan / Limit</th>
+              <th>Min. xarid</th>
+              <th>Holat</th>
+              <th>Amallar</th>
+            </tr>
+          </thead>
+          <tbody id="promosTableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAYMENT METHODS -->
+    <div class="view" id="payments">
+      <div class="topbar">
+        <div><h1 class="page-h">To'lov usullari</h1><div class="page-sub">Foydalanuvchilar hamyonni qanday to'ldirishi mumkinligini boshqaring</div></div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="m-ic" style="width:36px;height:36px;font-size:16px;">💳</div>
+            <div>
+              <div class="switch-lbl">Click</div>
+              <div class="switch-sub">Rasmiy to'lov provayderi — tavsiya etiladi</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;"><span class="pill done">Rasmiy</span><div class="toggle on" id="togClick"></div></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="m-ic" style="width:36px;height:36px;font-size:16px;">💳</div>
+            <div>
+              <div class="switch-lbl">Payme</div>
+              <div class="switch-sub">Rasmiy to'lov provayderi — tavsiya etiladi</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;"><span class="pill done">Rasmiy</span><div class="toggle on" id="togPayme"></div></div>
+        </div>
+      </div>
+
+      <div class="card" style="border-color:rgba(255,138,101,.4);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="m-ic" style="width:36px;height:36px;font-size:16px;">⚠️</div>
+            <div>
+              <div class="switch-lbl">AutoPayCard <span style="font-weight:500;color:var(--text-faint);font-size:11px;">(norasmiy)</span></div>
+              <div class="switch-sub">Shaxsiy karta + Gmail orqali to'lovni aniqlaydi — faqat backup sifatida</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;"><span class="pill pending">Norasmiy</span><div class="toggle" id="togAutoPay"></div></div>
+        </div>
+        <div class="calc-preview" style="margin:0 0 14px;border-color:rgba(255,138,101,.35);color:#FFCBB0;">
+          ⚠️ Diqqat: bu usul shaxsiy Gmail App Password va shaxsiy kartangizni talab qiladi. Banklar tomonidan karta bloklanish xavfi mavjudligi sababli faqat qo'shimcha/zaxira usul sifatida taqdim etiladi.
+        </div>
+        <div class="form-row">
+          <div class="field"><label>API kalit (@Autopaycardbot dan)</label><input id="inpAutoApiKey" placeholder="sk_live_…" type="password"></div>
+          <div class="field"><label>Karta oxirgi 4 raqami</label><input id="inpAutoLast4" placeholder="6412"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Ulangan Gmail</label><input id="inpAutoEmail" placeholder="payments.stellar@gmail.com"></div>
+          <div class="field"><label>Webhook URL</label><input id="inpAutoWebhook" value="https://stellar-bot.uz/webhook/autopaycard" disabled></div>
+        </div>
+        <button class="btn" style="margin-top:6px;" onclick="savePaymentSettings()">To'lov sozlamalarini saqlash</button>
+      </div>
+    </div>
+
+    <!-- ADMINS -->
+    <div class="view" id="admins">
+      <div class="topbar">
+        <div><h1 class="page-h">Adminlar</h1><div class="page-sub">Rollar va huquqlarni boshqarish</div></div>
+        <button class="btn" id="addAdminBtn" onclick="openAdminModal()">＋ Admin qo'shish</button>
+      </div>
+
+      <div class="card" style="padding:0;margin-bottom:20px;">
+        <table>
+          <thead><tr><th>Admin</th><th>Rol</th><th>Qo'shilgan</th><th>Amal</th></tr></thead>
+          <tbody id="adminsTableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Harakatlar jurnali (Audit log)</h3>
+        <div id="auditLogList">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ADD ADMIN MODAL -->
+    <div id="adminModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(4,8,6,.75);z-index:50;align-items:center;justify-content:center;">
+      <div style="width:420px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <h3 style="margin:0;font-size:15px;">Admin qo'shish</h3>
+          <span onclick="closeAdminModal()" style="cursor:pointer;color:var(--text-faint);font-size:18px;">✕</span>
+        </div>
+
+        <div class="price-tabs" id="addAdminTabs">
+          <div class="ptab active" data-mode="uname">@ Username / ID orqali</div>
+          <div class="ptab" data-mode="fwd">↪ Forward orqali</div>
+        </div>
+
+        <div id="admin-uname">
+          <div class="page-sub" style="margin-bottom:10px;">Foydalanuvchi botga avval kamida 1 marta yozgan yoki start bosgan bo'lishi lozim.</div>
+          <input class="search" id="adminCandidateInput" style="width:100%;margin-bottom:12px;" placeholder="@username yoki Telegram ID kiriting…">
+        </div>
+
+        <div id="admin-fwd" style="display:none;">
+          <div class="page-sub" style="margin-bottom:10px;">Nomzoddan kelgan xabarni botga forward qiling — bot xabar manbasidan foydalanuvchi ma'lumotlarini aniqlaydi.</div>
+          <div style="border:1px dashed var(--line);border-radius:12px;padding:16px;text-align:center;margin-bottom:10px;">
+            <div style="font-size:20px;margin-bottom:4px;">📥</div>
+            <div style="font-size:12px;color:var(--text-dim);">Xabar hali botga forward qilinmagan</div>
+          </div>
+        </div>
+
+        <div id="roleStep" style="margin-top:14px;">
+          <div class="field"><label>Tayinlanadigan Rol</label>
+            <select id="adminRoleSelect">
+              <option value="super_admin">Super Admin (To'liq huquq)</option>
+              <option value="price_admin">Narx admin (Faqat narxlar)</option>
+              <option value="support_admin">Support admin (Buyurtmalar va foydalanuvchilar)</option>
+              <option value="marketing_admin">Marketing admin (Broadcast va referal)</option>
+            </select>
+          </div>
+          <button class="btn" style="width:100%;margin-top:14px;" onclick="confirmAddAdmin()">Admin qilish</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROMO MODAL -->
+    <div class="modal" id="promoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:center;justify-content:center;z-index:999;">
+      <div class="card" style="width:420px;max-width:92%;background:var(--panel);">
+        <h3 style="margin-top:0;">Yangi Promo-kod yaratish</h3>
+        <div class="field" style="margin-bottom:12px;">
+          <label>Promo-kod nomi (masalan: SPRING2026)</label>
+          <input type="text" id="newPromoCode" style="text-transform:uppercase;font-weight:700;" placeholder="PROMO_KOD">
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Turi</label>
+            <select id="newPromoType">
+              <option value="discount_percent">Chegirma (%)</option>
+              <option value="balance_bonus">Balans bonusi (so'm)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Qiymati</label>
+            <input type="number" id="newPromoValue" placeholder="10 yoki 5000" value="10">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Maksimal limit (necha kishi)</label>
+            <input type="number" id="newPromoMaxUses" value="100">
+          </div>
+          <div class="field">
+            <label>Min. xarid (chegirma uchun)</label>
+            <input type="number" id="newPromoMinOrder" value="0">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="btn" style="flex:1;" onclick="submitCreatePromo()">Saqlash</button>
+          <button class="btn ghost" onclick="closePromoModal()">Bekor qilish</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast">Muvaffaqiyatli saqlandi!</div>
+
+<script>
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.style.display = 'block';
+    setTimeout(()=>{ t.style.display = 'none'; }, 2500);
+  }
+
+  // Navigation
+  document.querySelectorAll('.nav-link').forEach(link=>{
+    link.addEventListener('click', ()=>{
+      document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      link.classList.add('active');
+      const viewId = link.dataset.view;
+      document.getElementById(viewId).classList.add('active');
+      loadViewData(viewId);
+    });
+  });
+
+  function loadViewData(viewId) {
+    if(viewId === 'dash') loadDashboard();
+    if(viewId === 'price') loadPricing();
+    if(viewId === 'orders') loadAdminOrders();
+    if(viewId === 'users') loadAdminUsers();
+    if(viewId === 'channels') loadChannels();
+    if(viewId === 'payments') loadPayments();
+    if(viewId === 'referral') loadReferral();
+    if(viewId === 'promos') loadPromocodes();
+    if(viewId === 'admins') loadAdminsAndLogs();
+  }
+
+  // Toggles
+  document.querySelectorAll('.toggle').forEach(t=>{
+    t.addEventListener('click', ()=> t.classList.toggle('on'));
+  });
+
+  // DASHBOARD
+  async function loadDashboard() {
+    try {
+      const res = await fetch('/api/admin/dashboard');
+      if(!res.ok) return;
+      const data = await res.json();
+      document.getElementById('statNewUsers').innerText = data.new_users_week || '0';
+      document.getElementById('statTotalSales').innerText = (data.sales_total || 0).toLocaleString('ru-RU') + ' so\'m';
+      document.getElementById('statTotalProfit').innerText = (data.profit_total || 0).toLocaleString('ru-RU') + ' so\'m';
+      document.getElementById('statRefSales').innerText = (data.ref_sales_count || 0) + ' ta xarid';
+
+      // Breakdown table
+      const tbody = document.getElementById('breakdownTableBody');
+      tbody.innerHTML = data.breakdown.map(b => `
+        <tr>
+          <td>${b.name}</td>
+          <td>${b.sales.toLocaleString('ru-RU')} so'm</td>
+          <td>${b.cost.toLocaleString('ru-RU')} so'm</td>
+          <td style="color:var(--green-1)">${b.profit.toLocaleString('ru-RU')} so'm</td>
+        </tr>
+      `).join('');
+    } catch(e){ console.error(e); }
+  }
+
+  // PRICING
+  async function loadPricing() {
+    try {
+      const res = await fetch('/api/admin/pricing');
+      if(!res.ok) return;
+      const data = await res.json();
+      document.getElementById('inpStarsTonCost').value = data.stars_cost_ton;
+      document.getElementById('inpTonRate').value = data.ton_rate_uzs;
+      document.getElementById('inpMargin').value = data.margin_percent;
+      updateCalcPreview();
+
+      const tbody = document.getElementById('discountsTableBody');
+      tbody.innerHTML = data.discounts.map(d => `
+        <tr>
+          <td><input value="${d.min_amount}" class="disc-min"></td>
+          <td><input value="${d.discount_pct}" class="disc-pct"></td>
+          <td style="color:var(--danger);cursor:pointer;" onclick="removeDiscountRow(this)">✕</td>
+        </tr>
+      `).join('');
+    } catch(e){ console.error(e); }
+  }
+
+  function updateCalcPreview() {
+    const costTon = parseFloat(document.getElementById('inpStarsTonCost').value) || 0;
+    const rate = parseFloat(document.getElementById('inpTonRate').value) || 0;
+    const margin = parseFloat(document.getElementById('inpMargin').value) || 0;
+    const unitCost = Math.round(costTon * rate);
+    const unitSell = Math.round(unitCost * (1 + margin / 100));
+    const hundred = unitSell * 100;
+    document.getElementById('calcFormulaPreview').innerHTML = `
+      1 dona Stars tannarxi ≈ <b>${unitCost} so'm</b> → marja bilan sotish narxi ≈ <b>${unitSell} so'm</b>. Masalan 100 dona = <b>${hundred.toLocaleString('ru-RU')} so'm</b>.
+    `;
+  }
+
+  document.getElementById('inpStarsTonCost').addEventListener('input', updateCalcPreview);
+  document.getElementById('inpTonRate').addEventListener('input', updateCalcPreview);
+  document.getElementById('inpMargin').addEventListener('input', updateCalcPreview);
+
+  function addDiscountRow() {
+    const tbody = document.getElementById('discountsTableBody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><input value="2000" class="disc-min"></td><td><input value="10" class="disc-pct"></td><td style="color:var(--danger);cursor:pointer;" onclick="removeDiscountRow(this)">✕</td>`;
+    tbody.appendChild(tr);
+  }
+
+  function removeDiscountRow(el) {
+    el.parentElement.remove();
+  }
+
+  async function savePricing() {
+    const discounts = [];
+    document.querySelectorAll('#discountsTableBody tr').forEach(r => {
+      const min = parseInt(r.querySelector('.disc-min').value);
+      const pct = parseFloat(r.querySelector('.disc-pct').value);
+      if(min && pct) discounts.push({ min_amount: min, discount_pct: pct });
+    });
+
+    const body = {
+      stars_cost_ton: parseFloat(document.getElementById('inpStarsTonCost').value),
+      ton_rate_uzs: parseFloat(document.getElementById('inpTonRate').value),
+      margin_percent: parseFloat(document.getElementById('inpMargin').value),
+      discounts
+    };
+
+    const res = await fetch('/api/admin/pricing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if(res.ok) showToast("Narxlar muvaffaqiyatli saqlandi!");
+  }
+
+  function refreshTonRate() {
+    // Simulated live TON rate fetch
+    const currentRate = 14800 + Math.floor(Math.random() * 400 - 200);
+    document.getElementById('inpTonRate').value = currentRate;
+    updateCalcPreview();
+    showToast(`TON kursi yangilandi: ${currentRate} UZS`);
+  }
+
+  // ORDERS
+  async function loadAdminOrders() {
+    try {
+      const q = document.getElementById('adminOrderSearch').value.trim();
+      const res = await fetch(`/api/admin/orders${q ? '?search=' + encodeURIComponent(q) : ''}`);
+      if(!res.ok) return;
+      const orders = await res.json();
+      const tbody = document.getElementById('adminOrdersTable');
+      tbody.innerHTML = orders.map(o => {
+        let pill = `<span class="pill done">Bajarildi</span>`;
+        if(o.status === 'pending') pill = `<span class="pill pending">Kutilmoqda</span>`;
+        if(o.status === 'cancel') pill = `<span class="pill cancel">Bekor qilindi</span>`;
+
+        return `
+          <tr>
+            <td><b>${o.order_code}</b></td>
+            <td>${o.username}</td>
+            <td>${o.item_title}</td>
+            <td><b>${o.total_price.toLocaleString('ru-RU')} so'm</b></td>
+            <td>${o.created_at}</td>
+            <td>${pill}</td>
+            <td>
+              ${o.status === 'pending' ? `<button class="btn" style="padding:4px 9px;font-size:11px;" onclick="changeOrderStatus(${o.id}, 'done')">Bajarish</button>` : ''}
+              ${o.status !== 'cancel' ? `<button class="btn danger" style="padding:4px 9px;font-size:11px;" onclick="changeOrderStatus(${o.id}, 'cancel')">Bekor qilish</button>` : ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    } catch(e){ console.error(e); }
+  }
+
+  document.getElementById('adminOrderSearch').addEventListener('input', loadAdminOrders);
+
+  async function changeOrderStatus(orderId, status) {
+    if(!confirm(`Buyurtma holatini '${status}' ga o'zgartirmoqchimisiz?`)) return;
+    const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    if(res.ok) {
+      showToast("Buyurtma holati yangilandi!");
+      loadAdminOrders();
+    }
+  }
+
+  function exportOrdersCSV() {
+    window.location.href = '/api/admin/export/orders.csv';
+  }
+
+  // USERS
+  async function loadAdminUsers() {
+    try {
+      const q = document.getElementById('adminUserSearch').value.trim();
+      const res = await fetch(`/api/admin/users${q ? '?search=' + encodeURIComponent(q) : ''}`);
+      if(!res.ok) return;
+      const users = await res.json();
+      const tbody = document.getElementById('adminUsersTable');
+      tbody.innerHTML = users.map(u => `
+        <tr>
+          <td><span class="uavatar">${u.first_name ? u.first_name[0] : 'U'}</span><b>${u.first_name}</b> <small style="color:var(--text-faint)">(${u.username})</small></td>
+          <td><span class="pill ${u.role === 'super_admin' ? 'done' : 'pending'}">${u.role}</span></td>
+          <td>${u.balance.toLocaleString('ru-RU')} so'm</td>
+          <td>${u.orders_count} ta</td>
+          <td><b>${u.total_spent.toLocaleString('ru-RU')} so'm</b></td>
+          <td>${u.referrals_count} ta</td>
+          <td>${u.created_at}</td>
+        </tr>
+      `).join('');
+    } catch(e){ console.error(e); }
+  }
+  document.getElementById('adminUserSearch').addEventListener('input', loadAdminUsers);
+
+  // BROADCAST
+  let broadcastMode = 'write';
+  let broadcastSeg = 'all';
+
+  document.querySelectorAll('#broadcastSegments .seg').forEach(s => {
+    s.addEventListener('click', ()=>{
+      document.querySelectorAll('#broadcastSegments .seg').forEach(x=>x.classList.remove('active'));
+      s.classList.add('active');
+      broadcastSeg = s.dataset.seg;
+    });
+  });
+
+  document.querySelectorAll('#bcModeTabs .ptab').forEach(t=>{
+    t.addEventListener('click', ()=>{
+      document.querySelectorAll('#bcModeTabs .ptab').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      broadcastMode = t.dataset.mode;
+      document.getElementById('bc-write').style.display = broadcastMode === 'write' ? 'block' : 'none';
+      document.getElementById('bc-forward').style.display = broadcastMode === 'forward' ? 'block' : 'none';
+      document.getElementById('bc-postbot').style.display = broadcastMode === 'postbot' ? 'block' : 'none';
+    });
+  });
+
+  async function sendBroadcast() {
+    const text = document.getElementById('bcText').value.trim();
+    if(broadcastMode === 'write' && !text) {
+      alert("Xabar matnini kiriting!");
+      return;
+    }
+
+    const body = {
+      segment: broadcastSeg,
+      mode: broadcastMode,
+      text: text,
+      photo_url: document.getElementById('bcPhoto').value.trim() || null,
+      button_text: document.getElementById('bcBtnText').value.trim() || null,
+      forward_channel: document.getElementById('bcFwdChannel') ? document.getElementById('bcFwdChannel').value.trim() : null
+    };
+
+    const res = await fetch('/api/admin/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if(res.ok) {
+      showToast(data.message);
+    }
+  }
+
+  // REFERRAL
+  async function loadReferral() {
+    try {
+      const res = await fetch('/api/admin/referral');
+      if(!res.ok) return;
+      const data = await res.json();
+      document.getElementById('inpRefBonus').value = data.bonus_percent;
+      document.getElementById('inpRefMinPurchase').value = data.min_purchase_uzs;
+      document.getElementById('togRefAuto').classList.toggle('on', data.auto_reward);
+      document.getElementById('togRefRequire').classList.toggle('on', data.require_purchase);
+    } catch(e){ console.error(e); }
+  }
+
+  async function saveReferralSettings() {
+    const body = {
+      bonus_percent: parseFloat(document.getElementById('inpRefBonus').value),
+      min_purchase_uzs: parseFloat(document.getElementById('inpRefMinPurchase').value),
+      auto_reward: document.getElementById('togRefAuto').classList.contains('on'),
+      require_purchase: document.getElementById('togRefRequire').classList.contains('on')
+    };
+    const res = await fetch('/api/admin/referral', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if(res.ok) showToast("Referal sozlamalari saqlandi!");
+  }
+
+  // CHANNELS
+  async function loadChannels() {
+    try {
+      const res = await fetch('/api/admin/channels');
+      if(!res.ok) return;
+      const channels = await res.json();
+      const tbody = document.getElementById('channelsTableBody');
+      tbody.innerHTML = channels.filter(c => !c.is_detected).map(c => `
+        <tr>
+          <td><b>${c.title}</b> <small style="color:var(--text-faint)">(${c.username_or_link})</small></td>
+          <td>${c.req_type === 'ordinary' ? 'Oddiy a\'zolik' : (c.req_type === 'join_request' ? 'So\'rov orqali' : 'Tashqi havola')}</td>
+          <td><span class="pill ${c.req_type === 'external' ? 'pending' : 'done'}">${c.req_type === 'external' ? 'Tekshirilmaydi' : 'Avtomatik'}</span></td>
+          <td><span class="pill done">Faol</span></td>
+          <td><span style="color:var(--danger);cursor:pointer;" onclick="deleteChannel(${c.id})">O'chirish</span></td>
+        </tr>
+      `).join('');
+    } catch(e){ console.error(e); }
+  }
+
+  async function deleteChannel(id) {
+    if(!confirm("Kanalni majburiy a'zolikdan o'chirmoqchimisiz?")) return;
+    const res = await fetch(`/api/admin/channels/${id}`, { method: 'DELETE' });
+    if(res.ok) {
+      showToast("Kanal o'chirildi");
+      loadChannels();
+    }
+  }
+
+  async function addExternalChannel() {
+    const url = document.getElementById('extLinkUrl').value.trim();
+    const title = document.getElementById('extLinkTitle').value.trim();
+    if(!url || !title) {
+      alert("Havola va nomini to'ldiring");
+      return;
+    }
+    const res = await fetch('/api/admin/channels', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username_or_link: url, title: title, req_type: 'external' })
+    });
+    if(res.ok) {
+      showToast("Tashqi havola qo'shildi!");
+      document.getElementById('extLinkUrl').value = '';
+      document.getElementById('extLinkTitle').value = '';
+      loadChannels();
+    }
+  }
+
+  async function approveDetectedChannel() {
+    const title = "@stellar_promo";
+    const type = document.getElementById('detectedReqType').value;
+    const res = await fetch('/api/admin/channels', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username_or_link: title, title: "Stellar Promo Kanal", req_type: type, is_detected: false })
+    });
+    if(res.ok) {
+      showToast("Kanal majburiy obunaga biriktirildi!");
+      document.getElementById('detectedChannelsBox').style.display = 'none';
+      loadChannels();
+    }
+  }
+
+  // PAYMENTS
+  async function loadPayments() {
+    try {
+      const res = await fetch('/api/admin/payments');
+      if(!res.ok) return;
+      const data = await res.json();
+      document.getElementById('togClick').classList.toggle('on', data.click_active);
+      document.getElementById('togPayme').classList.toggle('on', data.payme_active);
+      document.getElementById('togAutoPay').classList.toggle('on', data.autopaycard_active);
+      document.getElementById('inpAutoLast4').value = data.autopaycard_last4;
+      document.getElementById('inpAutoEmail').value = data.autopaycard_email;
+      document.getElementById('inpAutoWebhook').value = data.autopaycard_webhook_url;
+    } catch(e){ console.error(e); }
+  }
+
+  async function savePaymentSettings() {
+    const body = {
+      click_active: document.getElementById('togClick').classList.contains('on'),
+      payme_active: document.getElementById('togPayme').classList.contains('on'),
+      autopaycard_active: document.getElementById('togAutoPay').classList.contains('on'),
+      autopaycard_last4: document.getElementById('inpAutoLast4').value.trim(),
+      autopaycard_email: document.getElementById('inpAutoEmail').value.trim()
+    };
+    const res = await fetch('/api/admin/payments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if(res.ok) showToast("To'lov usullari muvaffaqiyatli saqlandi!");
+  }
+
+  // ADMINS & AUDIT LOGS
+  async function loadAdminsAndLogs() {
+    try {
+      // Admins
+      const resA = await fetch('/api/admin/admins');
+      if(resA.ok) {
+        const admins = await resA.json();
+        const tbody = document.getElementById('adminsTableBody');
+        tbody.innerHTML = admins.map(a => `
+          <tr>
+            <td><span class="uavatar">${a.first_name ? a.first_name[0] : 'A'}</span><b>${a.first_name}</b> <small style="color:var(--text-faint)">(${a.username})</small></td>
+            <td><span class="pill ${a.role === 'super_admin' ? 'done' : 'pending'}">${a.role}</span></td>
+            <td>${a.created_at}</td>
+            <td>${a.role !== 'super_admin' ? `<span style="color:var(--danger);cursor:pointer;" onclick="revokeAdmin(${a.id})">Olib tashlash</span>` : '-'}</td>
+          </tr>
+        `).join('');
+      }
+
+      // Logs
+      const resL = await fetch('/api/admin/audit-logs');
+      if(resL.ok) {
+        const logs = await resL.json();
+        const cont = document.getElementById('auditLogList');
+        cont.innerHTML = logs.map(l => `
+          <div class="top-prod">
+            <span><b>${l.admin}</b> — ${l.action} <small style="color:var(--text-faint)">(${l.details || ''})</small></span>
+            <span style="color:var(--text-faint);font-size:11px;">${l.created_at}</span>
+          </div>
+        `).join('');
+      }
+    } catch(e){ console.error(e); }
+  }
+
+  function openAdminModal() {
+    document.getElementById('adminModalOverlay').style.display = 'flex';
+  }
+  function closeAdminModal() {
+    document.getElementById('adminModalOverlay').style.display = 'none';
+  }
+
+  async function confirmAddAdmin() {
+    const ident = document.getElementById('adminCandidateInput').value.trim();
+    const role = document.getElementById('adminRoleSelect').value;
+    if(!ident) {
+      alert("Username yoki ID kiriting!");
+      return;
+    }
+
+    const res = await fetch('/api/admin/admins', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier: ident, role: role })
+    });
+    const data = await res.json();
+    if(res.ok) {
+      showToast(data.message);
+      closeAdminModal();
+      loadAdminsAndLogs();
+    } else {
+      alert(data.detail || "Xatolik yuz berdi");
+    }
+  }
+
+  async function revokeAdmin(uid) {
+    if(!confirm("Admin huquqini bekor qilmoqchimisiz?")) return;
+    const res = await fetch(`/api/admin/admins/${uid}`, { method: 'DELETE' });
+    if(res.ok) {
+      showToast("Admin huquqi olib tashlandi");
+      loadAdminsAndLogs();
+    }
+  }
+
+  // ================= PROMO CODES JS ================= //
+
+  function openPromoModal() {
+    document.getElementById('newPromoCode').value = '';
+    document.getElementById('newPromoValue').value = '10';
+    document.getElementById('newPromoMaxUses').value = '100';
+    document.getElementById('newPromoMinOrder').value = '0';
+    document.getElementById('promoModal').style.display = 'flex';
+  }
+
+  function closePromoModal() {
+    document.getElementById('promoModal').style.display = 'none';
+  }
+
+  async function submitCreatePromo() {
+    const code = document.getElementById('newPromoCode').value.trim();
+    const type = document.getElementById('newPromoType').value;
+    const val = parseFloat(document.getElementById('newPromoValue').value) || 0;
+    const maxUses = parseInt(document.getElementById('newPromoMaxUses').value) || 100;
+    const minOrder = parseFloat(document.getElementById('newPromoMinOrder').value) || 0;
+
+    if(!code) {
+      alert("Promo-kod nomini kiriting");
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/promocodes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: code,
+          reward_type: type,
+          reward_value: val,
+          max_uses: maxUses,
+          min_order_amount: minOrder
+        })
+      });
+      const data = await res.json();
+      if(res.ok) {
+        closePromoModal();
+        showToast("Promo-kod muvaffaqiyatli yaratildi!");
+        loadPromocodes();
+      } else {
+        alert(data.detail || "Xatolik yuz berdi");
+      }
+    } catch(e) {
+      alert("Tarmoq xatosi!");
+    }
+  }
+
+  async function loadPromocodes() {
+    try {
+      const res = await fetch('/api/admin/promocodes');
+      if(!res.ok) return;
+      const data = await res.json();
+      const tbody = document.getElementById('promosTableBody');
+      if(!data.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-faint);padding:24px;">Promo-kodlar mavjud emas</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.map(p => {
+        const typeBadge = p.reward_type === 'discount_percent' ? '<span class="pill done">Chegirma</span>' : '<span class="pill pending">Bonus</span>';
+        const valText = p.reward_type === 'discount_percent' ? `${p.reward_value}%` : `${p.reward_value.toLocaleString('ru-RU')} so'm`;
+        const activeText = p.is_active ? '<span style="color:var(--green-1);font-weight:600;">Faol</span>' : '<span style="color:var(--danger);font-weight:600;">O\'chirilgan</span>';
+        return `
+          <tr>
+            <td><b>${p.code}</b></td>
+            <td>${typeBadge}</td>
+            <td><b>${valText}</b></td>
+            <td>${p.current_uses} / ${p.max_uses}</td>
+            <td>${p.min_order_amount > 0 ? p.min_order_amount.toLocaleString('ru-RU') + ' so\'m' : '—'}</td>
+            <td>${activeText}</td>
+            <td>
+              <button class="btn ghost" style="padding:4px 10px;font-size:11px;margin-right:4px;" onclick="togglePromo(${p.id})">${p.is_active ? "O'chirish" : "Yoqish"}</button>
+              <button class="btn danger" style="padding:4px 8px;font-size:11px;" onclick="deletePromo(${p.id})">✕</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  async function togglePromo(id) {
+    try {
+      await fetch(`/api/admin/promocodes/${id}/toggle`, { method: 'POST' });
+      loadPromocodes();
+    } catch(e){}
+  }
+
+  async function deletePromo(id) {
+    if(!confirm("Haqiqatan ham bu promo-kodni o'chirmoqchimisiz?")) return;
+    try {
+      await fetch(`/api/admin/promocodes/${id}`, { method: 'DELETE' });
+      loadPromocodes();
+    } catch(e){}
+  }
+
+  // Init
+  loadDashboard();
+</script>
+</body>
+</html>
