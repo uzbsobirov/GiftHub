@@ -25,6 +25,12 @@ AsyncSessionLocal = async_sessionmaker(
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Migrate star_unit_price_uzs if not exists
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE pricing_settings ADD COLUMN star_unit_price_uzs FLOAT DEFAULT 180.0"))
+        except Exception:
+            pass # column already exists
 
     # Initialize default settings if not exists
     async with AsyncSessionLocal() as session:

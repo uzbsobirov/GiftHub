@@ -32,10 +32,10 @@ def validate_init_data(init_data: str, bot_token: str = config.BOT_TOKEN) -> Opt
             }
 
         # Telegram standard hash verification
-        # 1. secret_key = HMAC-SHA256("WebAppData", bot_token)
+        # 1. secret_key = HMAC-SHA256(bot_token, "WebAppData")
         secret_key = hmac.new(
-            key=b"WebAppData",
-            msg=bot_token.encode("utf-8"),
+            key=bot_token.encode("utf-8"),
+            msg=b"WebAppData",
             digestmod=hashlib.sha256
         ).digest()
 

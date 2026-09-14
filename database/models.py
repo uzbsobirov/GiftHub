@@ -33,6 +33,7 @@ class PricingSetting(Base):
     stars_cost_ton = Column(Float, default=0.0021) # 1 Stars cost in TON
     ton_rate_uzs = Column(Float, default=14800.0)  # 1 TON in UZS
     margin_percent = Column(Float, default=15.0)    # Margin percentage
+    star_unit_price_uzs = Column(Float, default=180.0) # Direct 1 Star base cost in UZS
     stars_discounts_json = Column(Text, default='[{"min_amount": 500, "discount_pct": 5}, {"min_amount": 1000, "discount_pct": 8}]')
     premium_prices_json = Column(Text, default='{"3": 142000, "6": 210000, "12": 380000}')
     gifts_json = Column(Text, default='[{"id": "bear", "name": "Teddy Bear", "price_uzs": 64000, "cost_uzs": 58000, "icon": "🧸"}, {"id": "heart", "name": "Neon Heart", "price_uzs": 85000, "cost_uzs": 75000, "icon": "💖"}, {"id": "rocket", "name": "Cosmo Rocket", "price_uzs": 120000, "cost_uzs": 105000, "icon": "🚀"}]')

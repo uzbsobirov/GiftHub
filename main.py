@@ -33,6 +33,19 @@ async def start_web_server():
 async def start_bot():
     try:
         await set_bot_commands(bot)
+        if config.WEB_APP_URL.startswith("https://"):
+            try:
+                from aiogram.types import MenuButtonWebApp, WebAppInfo
+                await bot.set_chat_menu_button(
+                    menu_button=MenuButtonWebApp(
+                        text="Stellar App ⭐",
+                        web_app=WebAppInfo(url=config.WEB_APP_URL)
+                    )
+                )
+                logging.info("✅ Telegram Chat Menu Button muvaffaqiyatli o'rnatildi!")
+            except Exception as e:
+                logging.warning(f"Chat menu button o'rnatishda xatolik: {e}")
+
         await notify_admins(bot)
         await bot.delete_webhook(drop_pending_updates=True)
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())

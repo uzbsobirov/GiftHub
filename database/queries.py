@@ -122,21 +122,34 @@ async def update_pricing(
     stars_cost_ton: float,
     ton_rate_uzs: float,
     margin_percent: float,
-    stars_discounts_json: Optional[str] = None
+    star_unit_price_uzs: Optional[float] = None,
+    stars_discounts_json: Optional[str] = None,
+    premium_prices_json: Optional[str] = None,
+    gifts_json: Optional[str] = None
 ) -> PricingSetting:
     pricing = await get_pricing(session)
     pricing.stars_cost_ton = stars_cost_ton
     pricing.ton_rate_uzs = ton_rate_uzs
     pricing.margin_percent = margin_percent
-    if stars_discounts_json:
+    if star_unit_price_uzs is not None and star_unit_price_uzs > 0:
+        pricing.star_unit_price_uzs = star_unit_price_uzs
+    if stars_discounts_json is not None:
         pricing.stars_discounts_json = stars_discounts_json
+    if premium_prices_json is not None:
+        pricing.premium_prices_json = premium_prices_json
+    if gifts_json is not None:
+        pricing.gifts_json = gifts_json
     await session.commit()
     await session.refresh(pricing)
     return pricing
 
 def calculate_stars_price(amount: int, pricing: PricingSetting) -> Dict[str, Any]:
-    # Cost per star in UZS: stars_cost_ton * ton_rate_uzs
-    unit_cost_uzs = pricing.stars_cost_ton * pricing.ton_rate_uzs
+    # Determine base unit cost
+    if getattr(pricing, "star_unit_price_uzs", None) and pricing.star_unit_price_uzs > 0:
+        unit_cost_uzs = pricing.star_unit_price_uzs
+    else:
+        unit_cost_uzs = pricing.stars_cost_ton * pricing.ton_rate_uzs
+
     unit_sell_uzs = unit_cost_uzs * (1.0 + (pricing.margin_percent / 100.0))
 
     base_total = unit_sell_uzs * amount

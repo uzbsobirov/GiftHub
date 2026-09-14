@@ -602,7 +602,8 @@ async def get_admin_dashboard(admin: User = Depends(get_current_admin)):
 async def get_admin_pricing(admin: User = Depends(get_current_admin)):
     async with AsyncSessionLocal() as session:
         pricing = await queries.get_pricing(session)
-        unit_cost = pricing.stars_cost_ton * pricing.ton_rate_uzs
+        star_unit = getattr(pricing, "star_unit_price_uzs", None) or 180.0
+        unit_cost = star_unit if star_unit > 0 else (pricing.stars_cost_ton * pricing.ton_rate_uzs)
         unit_sell = unit_cost * (1 + pricing.margin_percent / 100)
 
         discounts = []
@@ -611,40 +612,67 @@ async def get_admin_pricing(admin: User = Depends(get_current_admin)):
         except Exception:
             discounts = []
 
+        prem_prices = {}
+        try:
+            prem_prices = json.loads(pricing.premium_prices_json)
+        except Exception:
+            prem_prices = {"3": 142000, "6": 210000, "12": 380000}
+
+        gifts = []
+        try:
+            gifts = json.loads(pricing.gifts_json)
+        except Exception:
+            gifts = [
+                {"id": "bear", "name": "Teddy Bear", "price_uzs": 64000, "icon": "🧸"},
+                {"id": "heart", "name": "Neon Heart", "price_uzs": 85000, "icon": "💖"},
+                {"id": "rocket", "name": "Cosmo Rocket", "price_uzs": 120000, "icon": "🚀"}
+            ]
+
         return {
             "stars_cost_ton": pricing.stars_cost_ton,
             "ton_rate_uzs": pricing.ton_rate_uzs,
             "margin_percent": pricing.margin_percent,
+            "star_unit_price_uzs": star_unit,
             "unit_cost_uzs": round(unit_cost, 2),
             "unit_sell_uzs": round(unit_sell, 2),
-            "discounts": discounts
+            "discounts": discounts,
+            "premium_prices": prem_prices,
+            "gifts": gifts
         }
 
 class PricingUpdateRequest(BaseModel):
-    stars_cost_ton: float
-    ton_rate_uzs: float
-    margin_percent: float
+    stars_cost_ton: float = 0.0021
+    ton_rate_uzs: float = 38000.0
+    margin_percent: float = 15.0
+    star_unit_price_uzs: Optional[float] = None
     discounts: Optional[List[Dict[str, Any]]] = None
+    premium_prices: Optional[Dict[str, Any]] = None
+    gifts: Optional[List[Dict[str, Any]]] = None
 
 @app.post("/api/admin/pricing")
 async def update_admin_pricing(req: PricingUpdateRequest, admin: User = Depends(get_current_admin)):
     async with AsyncSessionLocal() as session:
-        disc_str = json.dumps(req.discounts) if req.discounts else None
+        disc_str = json.dumps(req.discounts) if req.discounts is not None else None
+        prem_str = json.dumps(req.premium_prices) if req.premium_prices is not None else None
+        gifts_str = json.dumps(req.gifts) if req.gifts is not None else None
         pricing = await queries.update_pricing(
             session=session,
             stars_cost_ton=req.stars_cost_ton,
             ton_rate_uzs=req.ton_rate_uzs,
             margin_percent=req.margin_percent,
-            stars_discounts_json=disc_str
+            star_unit_price_uzs=req.star_unit_price_uzs,
+            stars_discounts_json=disc_str,
+            premium_prices_json=prem_str,
+            gifts_json=gifts_str
         )
         await queries.log_admin_action(
             session=session,
             admin_id=admin.id,
             admin_username=admin.username,
             action="Narx sozlamalarini yangiladi",
-            details=f"Stars TON cost: {req.stars_cost_ton}, TON kursi: {req.ton_rate_uzs} so'm, Marja: {req.margin_percent}%"
+            details=f"1 Stars: {req.star_unit_price_uzs} UZS, Marja: {req.margin_percent}%"
         )
-        return {"success": True, "message": "Narxlar muvaffaqiyatli saqlandi!"}
+        return {"success": True, "message": "Barcha narxlar muvaffaqiyatli saqlandi!"}
 
 @app.get("/api/admin/orders")
 async def get_admin_orders(
@@ -1057,6 +1085,19 @@ class BroadcastRequest(BaseModel):
     forward_channel: Optional[str] = None
     postbot_msg_id: Optional[str] = None
 
+latest_broadcast_status = {
+    "is_running": False,
+    "total": 0,
+    "sent": 0,
+    "blocked": 0,
+    "failed": 0,
+    "completed_at": None
+}
+
+@app.get("/api/admin/broadcast/status")
+async def get_broadcast_status(admin: User = Depends(get_current_admin)):
+    return latest_broadcast_status
+
 @app.post("/api/admin/broadcast")
 async def send_broadcast_endpoint(req: BroadcastRequest, admin: User = Depends(get_current_admin)):
     async with AsyncSessionLocal() as session:
@@ -1067,27 +1108,81 @@ async def send_broadcast_endpoint(req: BroadcastRequest, admin: User = Depends(g
             session=session,
             admin_id=admin.id,
             admin_username=admin.username,
-            action=f"Broadcast yuborildi: {len(recipients)} ta foydalanuvchiga",
+            action=f"Broadcast boshlandi: {len(recipients)} ta foydalanuvchiga",
             details=f"Segment: {req.segment}, Rejim: {req.mode}"
         )
 
         # Non-blocking async queue delivery with rate limit ~30/sec
-        asyncio.create_task(run_broadcast_queue(recipients, req))
+        asyncio.create_task(run_broadcast_queue(recipients, req, admin_id=admin.id))
 
         return {
             "success": True,
             "recipients_count": len(recipients),
-            "message": f"Broadcast {len(recipients)} ta foydalanuvchiga yuborish uchun navbatga qo'yildi (~30 xabar/sek)!"
+            "message": f"Broadcast {len(recipients)} ta foydalanuvchiga yuborilmoqda... Tugagach Telegramingizga hisobot yuboriladi!"
         }
 
-async def run_broadcast_queue(recipients: List[int], req: BroadcastRequest):
+async def run_broadcast_queue(recipients: List[int], req: BroadcastRequest, admin_id: Optional[int] = None):
+    global latest_broadcast_status
     if not bot_instance:
         return
+
+    latest_broadcast_status = {
+        "is_running": True,
+        "total": len(recipients),
+        "sent": 0,
+        "blocked": 0,
+        "failed": 0,
+        "completed_at": None
+    }
+
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
+
+    reply_markup = None
+    if req.button_text:
+        b_url = req.button_url or config.WEB_APP_URL
+        if b_url.startswith("https://") or b_url.startswith("http://"):
+            reply_markup = InlineKeyboardMarkup(
+                inline_keyboard=[[InlineKeyboardButton(text=req.button_text, url=b_url)]]
+            )
+
     for uid in recipients:
         try:
-            if req.mode == "write" and req.text:
-                await bot_instance.send_message(chat_id=uid, text=req.text)
-            await asyncio.sleep(0.035) # ~28-30 messages per second rate limiter
+            if req.photo_url and req.photo_url.startswith("http"):
+                await bot_instance.send_photo(
+                    chat_id=uid,
+                    photo=req.photo_url,
+                    caption=req.text or "",
+                    reply_markup=reply_markup
+                )
+            elif req.text:
+                await bot_instance.send_message(
+                    chat_id=uid,
+                    text=req.text,
+                    reply_markup=reply_markup
+                )
+            latest_broadcast_status["sent"] += 1
+            await asyncio.sleep(0.04) # ~25-30 messages per second rate limiter
+        except TelegramForbiddenError:
+            latest_broadcast_status["blocked"] += 1
+        except Exception:
+            latest_broadcast_status["failed"] += 1
+
+    latest_broadcast_status["is_running"] = False
+    latest_broadcast_status["completed_at"] = datetime.utcnow().strftime("%d %b %Y, %H:%M")
+
+    # Send receipt directly to the admin in Telegram
+    if admin_id and bot_instance:
+        report_text = (
+            f"📢 <b>Broadcast xabarnomasi yakunlandi!</b>\n\n"
+            f"👥 <b>Jami rejalashtirilgan:</b> {latest_broadcast_status['total']} ta\n"
+            f"✅ <b>Muvaffaqiyatli yetkazildi:</b> {latest_broadcast_status['sent']} ta\n"
+            f"🚫 <b>Botni bloklagan:</b> {latest_broadcast_status['blocked']} ta\n"
+            f"⚠️ <b>Xatoliklar:</b> {latest_broadcast_status['failed']} ta\n"
+            f"⏱ <b>Vaqt:</b> {latest_broadcast_status['completed_at']}"
+        )
+        try:
+            await bot_instance.send_message(chat_id=admin_id, text=report_text)
         except Exception:
             pass
 

@@ -272,23 +272,20 @@
 
 <div class="frame">
   <!-- GATE (channel check) -->
-  <div class="screen active" id="gate">
+  <div class="screen" id="gate">
     <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:40px;">
       <div style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,var(--green-1),var(--green-2));display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:18px;">⭐</div>
       <h2 style="margin:0 0 8px;font-size:18px;">Davom etish uchun a'zo bo'ling</h2>
       <p style="color:var(--text-dim);font-size:12.5px;line-height:1.6;max-width:260px;margin:0 0 24px;">Botdan to'liq foydalanish uchun quyidagi kanal(lar)ga a'zo bo'lishingiz shart.</p>
     </div>
 
-    <div id="gateChannelsList">
-      <div class="join-banner"><span class="dot"></span><b>@stellar_news</b><a href="https://t.me/stellar_news" target="_blank">A'zo bo'lish</a></div>
-      <div class="join-banner"><span class="dot"></span><b>@stellar_chat</b><a href="https://t.me/stellar_chat" target="_blank">A'zo bo'lish</a></div>
-    </div>
+    <div id="gateChannelsList"></div>
 
     <button class="topup-btn" id="checkGateBtn" style="width:100%;justify-content:center;font-size:14px;padding:13px;margin-top:22px;">Tekshirish</button>
   </div>
 
   <!-- HOME -->
-  <div class="screen" id="home">
+  <div class="screen active" id="home">
     <div class="header-bar">
       <div class="user-badge">
         <div class="u-avatar-mini" id="uInitials">СА</div>
@@ -533,28 +530,35 @@
 
   function updateUserUI() {
     if(!currentUser) return;
-    const initials = (currentUser.first_name ? currentUser.first_name[0] : 'S') + (currentUser.last_name ? currentUser.last_name[0] : '');
-    document.getElementById('uInitials').innerText = initials || '⭐';
-    document.getElementById('profileAvatar').innerText = initials || '⭐';
-    document.getElementById('uNameTop').innerText = currentUser.first_name || 'Foydalanuvchi';
-    document.getElementById('profileName').innerText = `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim();
-    document.getElementById('profileUsername').innerText = currentUser.username ? `@${currentUser.username}` : `ID: ${currentUser.id}`;
+    try {
+      const initials = ((currentUser.first_name ? currentUser.first_name[0] : 'S') + (currentUser.last_name ? currentUser.last_name[0] : '')).toUpperCase();
+      const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
 
-    const formattedBal = Number(currentUser.balance).toLocaleString('ru-RU');
-    document.getElementById('liveBalance').innerText = formattedBal;
-    document.getElementById('liveBalanceWallet').innerText = formattedBal;
+      setVal('uInitials', initials || '⭐');
+      setVal('profileAvatar', initials || '⭐');
+      setVal('uNameTop', currentUser.first_name || 'Foydalanuvchi');
+      setVal('profileName', `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 'Foydalanuvchi');
+      setVal('profileUsername', currentUser.username ? `@${currentUser.username}` : `ID: ${currentUser.id}`);
 
-    document.getElementById('profileOrdersCount').innerText = currentUser.orders_count;
-    document.getElementById('profileJoinDate').innerText = currentUser.created_at || 'Bugun';
+      const formattedBal = Number(currentUser.balance || 0).toLocaleString('ru-RU');
+      setVal('liveBalance', formattedBal);
+      setVal('liveBalanceWallet', formattedBal);
 
-    // Referral
-    const refLink = `t.me/stellar_gift_bot?start=ref_${currentUser.id}`;
-    document.getElementById('refLinkText').innerText = refLink;
-    document.getElementById('refCount').innerText = currentUser.referrals_count;
-    document.getElementById('refEarned').innerText = Number(currentUser.referral_earnings).toLocaleString('ru-RU');
+      setVal('profileOrdersCount', currentUser.orders_count || 0);
+      setVal('profileJoinDate', currentUser.created_at || 'Bugun');
 
-    if(currentUser.role && currentUser.role !== 'user') {
-      document.getElementById('adminBadgeLink').style.display = 'inline-block';
+      // Referral
+      const refLink = `t.me/stellar_gift_bot?start=ref_${currentUser.id}`;
+      setVal('refLinkText', refLink);
+      setVal('refCount', currentUser.referrals_count || 0);
+      setVal('refEarned', Number(currentUser.referral_earnings || 0).toLocaleString('ru-RU'));
+
+      if(currentUser.role && currentUser.role !== 'user') {
+        const ab = document.getElementById('adminBadgeLink');
+        if(ab) ab.style.display = 'inline-block';
+      }
+    } catch(err) {
+      console.warn("Error in updateUserUI:", err);
     }
   }
 
@@ -564,21 +568,36 @@
       const res = await fetch('/api/gate/check', { headers: authHeaders() });
       if(res.ok) {
         const data = await res.json();
-        if(data.all_passed) {
-          document.getElementById('gate').classList.remove('active');
-          document.getElementById('home').classList.add('active');
-        } else {
+        if(!data.all_passed && data.channels && data.channels.length > 0) {
           renderGateChannels(data.channels);
+          document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+          const gateEl = document.getElementById('gate');
+          if(gateEl) gateEl.classList.add('active');
+          const nav = document.getElementById('bottomNav');
+          if(nav) nav.style.display = 'none';
+        } else {
+          const gateEl = document.getElementById('gate');
+          if(gateEl) gateEl.classList.remove('active');
+          const nav = document.getElementById('bottomNav');
+          if(nav) nav.style.display = 'flex';
+          if(!document.querySelector('.screen.active')) {
+            const homeEl = document.getElementById('home');
+            if(homeEl) homeEl.classList.add('active');
+          }
         }
       }
     } catch(e) {
-      document.getElementById('gate').classList.remove('active');
-      document.getElementById('home').classList.add('active');
+      console.warn("Gate check bypass on network error:", e);
+      const gateEl = document.getElementById('gate');
+      if(gateEl) gateEl.classList.remove('active');
+      const homeEl = document.getElementById('home');
+      if(homeEl) homeEl.classList.add('active');
     }
   }
 
   function renderGateChannels(channels) {
     const list = document.getElementById('gateChannelsList');
+    if(!list) return;
     list.innerHTML = channels.map(c => `
       <div class="join-banner">
         <span class="dot"></span>
@@ -586,19 +605,23 @@
         <a href="${c.link}" target="_blank">A'zo bo'lish</a>
       </div>
     `).join('');
-  }
+  }  // Load Products
+  let productsCatalog = { stars: [], premium: [], gifts: [] };
 
-  // Load Products
   async function loadProducts() {
     try {
       const res = await fetch('/api/products');
       if(!res.ok) return;
       const data = await res.json();
 
+      productsCatalog.stars = data.stars_packages || [];
+      productsCatalog.premium = data.premium_packages || [];
+      productsCatalog.gifts = data.gifts || [];
+
       // Stars
       const sGrid = document.getElementById('starsGrid');
-      sGrid.innerHTML = data.stars_packages.map(p => `
-        <div class="prod-card" onclick='openBuyModal("stars", "${p.amount} ⭐ Stars", ${p.price_uzs}, ${p.amount})'>
+      sGrid.innerHTML = productsCatalog.stars.map((p, idx) => `
+        <div class="prod-card" onclick="openCatalogItem('stars', ${idx})">
           <div class="prod-name">${p.name}</div>
           <div class="prod-sub">${p.formatted_price}</div>
         </div>
@@ -611,25 +634,38 @@
 
       // Premium
       const pGrid = document.getElementById('premGrid');
-      pGrid.innerHTML = data.premium_packages.map(p => `
-        <div class="prod-card" onclick='openBuyModal("premium", "${p.name}", ${p.price_uzs}, ${p.months})'>
+      pGrid.innerHTML = productsCatalog.premium.map((p, idx) => `
+        <div class="prod-card" onclick="openCatalogItem('premium', ${idx})">
           <div class="prod-icon ic-prem">${p.icon}</div>
           <div class="prod-name">${p.name}</div>
-          <div class="prod-sub">${p.price_uzs.toLocaleString('ru-RU')} so'm</div>
+          <div class="prod-sub">${Number(p.price_uzs).toLocaleString('ru-RU')} so'm</div>
         </div>
       `).join('');
 
       // Gifts
       const gGrid = document.getElementById('giftsGrid');
-      gGrid.innerHTML = data.gifts.map(g => `
-        <div class="prod-card" onclick='openBuyModal("gift", "${g.name}", ${g.price_uzs}, 1)'>
+      gGrid.innerHTML = productsCatalog.gifts.map((g, idx) => `
+        <div class="prod-card" onclick="openCatalogItem('gifts', ${idx})">
           <div class="prod-icon ic-gift">${g.icon}</div>
           <div class="prod-name">${g.name}</div>
-          <div class="prod-sub">${g.price_uzs.toLocaleString('ru-RU')} so'm</div>
+          <div class="prod-sub">${Number(g.price_uzs).toLocaleString('ru-RU')} so'm</div>
         </div>
       `).join('');
 
-    } catch(e){ console.error(e); }
+    } catch(e){ console.error("loadProducts error:", e); }
+  }
+
+  function openCatalogItem(category, idx) {
+    const item = productsCatalog[category] ? productsCatalog[category][idx] : null;
+    if(!item) return;
+
+    if(category === 'stars') {
+      openBuyModal('stars', `${item.amount} ⭐ Stars`, item.price_uzs, item.amount);
+    } else if(category === 'premium') {
+      openBuyModal('premium', item.name, item.price_uzs, item.months);
+    } else if(category === 'gifts') {
+      openBuyModal('gift', item.name, item.price_uzs, 1);
+    }
   }
 
   async function promptCustomStars() {
@@ -651,7 +687,7 @@
   function openBuyModal(type, title, price, amount) {
     currentProductToBuy = { type, title, price, amount, originalPrice: price };
     document.getElementById('modalProductTitle').innerText = title;
-    document.getElementById('modalProductPrice').innerText = `Narxi: ${price.toLocaleString('ru-RU')} so'm`;
+    document.getElementById('modalProductPrice').innerText = `Narxi: ${Number(price).toLocaleString('ru-RU')} so'm`;
     document.getElementById('modalPromoInput').value = '';
     const msgEl = document.getElementById('modalPromoMsg');
     msgEl.style.display = 'none';
@@ -934,10 +970,10 @@
 
   // Init
   (async function init() {
-    await loadUser();
-    await checkGate();
-    await loadProducts();
-    await loadHistory();
+    try { await loadUser(); } catch(e) { console.warn("User load error:", e); }
+    try { await checkGate(); } catch(e) { console.warn("Gate check error:", e); }
+    try { await loadProducts(); } catch(e) { console.warn("Products load error:", e); }
+    try { await loadHistory(); } catch(e) { console.warn("History load error:", e); }
   })();
 </script>
 </body>
