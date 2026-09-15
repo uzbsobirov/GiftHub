@@ -1,4 +1,5 @@
 import os
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from data import config
 from database.models import (
@@ -31,6 +32,19 @@ async def init_db():
             await conn.execute(text("ALTER TABLE pricing_settings ADD COLUMN star_unit_price_uzs FLOAT DEFAULT 180.0"))
         except Exception:
             pass # column already exists
+
+        # Migrate payment card fields if not exists
+        for col_sql in [
+            "ALTER TABLE payment_settings ADD COLUMN card_active BOOLEAN DEFAULT 1",
+            "ALTER TABLE payment_settings ADD COLUMN card_number VARCHAR(32) DEFAULT '8600 1234 5678 9012'",
+            "ALTER TABLE payment_settings ADD COLUMN card_holder VARCHAR(128) DEFAULT 'ANVAR S.'",
+            "ALTER TABLE payment_settings ADD COLUMN bank_name VARCHAR(64) DEFAULT 'TBC Bank'"
+        ]:
+            try:
+                from sqlalchemy import text
+                await conn.execute(text(col_sql))
+            except Exception:
+                pass
 
     # Initialize default settings if not exists
     async with AsyncSessionLocal() as session:
@@ -68,23 +82,13 @@ async def init_db():
             )
             session.add(payment)
 
-        # Ensure default demo channels
-        from sqlalchemy import select
-        res = await session.execute(select(ChannelRequirement))
-        if not res.scalars().first():
-            ch1 = ChannelRequirement(
-                username_or_link="@stellar_news",
-                title="Stellar Rasmiy Yangiliklar",
-                req_type="ordinary",
-                is_active=True
+        # Clean up any leftover demo channels if they were added previously
+        from sqlalchemy import delete
+        await session.execute(
+            delete(ChannelRequirement).where(
+                ChannelRequirement.username_or_link.in_(["@stellar_news", "@stellar_chat"])
             )
-            ch2 = ChannelRequirement(
-                username_or_link="@stellar_chat",
-                title="Stellar VIP Guruh",
-                req_type="join_request",
-                is_active=True
-            )
-            session.add_all([ch1, ch2])
+        )
 
         # Seed default demo promo codes
         res_promo = await session.execute(select(PromoCode))

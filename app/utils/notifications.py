@@ -56,6 +56,21 @@ async def send_topup_notification(
     except Exception as e:
         logger.warning(f"Foydalanuvchiga to'ldirish xabarnomasi yuborilmadi ({user_id}): {e}")
 
+def format_recipient_link(recipient: Optional[str]) -> str:
+    if not recipient:
+        return ""
+    clean = recipient.strip()
+    if clean.startswith("@"):
+        uname = clean.lstrip("@")
+        return f'<a href="https://t.me/{uname}">@{uname}</a>'
+    elif clean.isdigit():
+        return f'<a href="tg://user?id={clean}">ID: {clean}</a>'
+    elif clean.lower().startswith("id:"):
+        uid = clean[3:].strip()
+        return f'<a href="tg://user?id={uid}">ID: {uid}</a>'
+    else:
+        return f'<a href="https://t.me/{clean}">@{clean}</a>'
+
 async def send_order_created_notification(
     bot: Optional[Bot],
     user_id: int,
@@ -65,7 +80,8 @@ async def send_order_created_notification(
     total_price: float,
     status: str,
     new_balance: float,
-    recipient_username: Optional[str] = None
+    recipient_username: Optional[str] = None,
+    buyer_username: Optional[str] = None
 ):
     if not bot:
         return
@@ -76,7 +92,9 @@ async def send_order_created_notification(
             "cancel": "❌ Bekor qilindi"
         }
         status_label = status_badges.get(status, status)
-        recipient_line = f"🎯 <b>Qabul qiluvchi:</b> {recipient_username}\n" if recipient_username else ""
+        effective_recipient = recipient_username or (f"@{buyer_username}" if buyer_username else str(user_id))
+        formatted_rcp = format_recipient_link(effective_recipient)
+        recipient_line = f"🎯 <b>Qabul qiluvchi:</b> {formatted_rcp}\n" if formatted_rcp else ""
 
         text = (
             "🛍 <b>Yangi buyurtma qabul qilindi!</b>\n\n"
@@ -117,7 +135,8 @@ async def send_admin_order_alert(
         return
     profit = total_price - cost_price
     user_tag = f"@{username}" if username else f"<code>{user_id}</code>"
-    recipient_info = f"\n🎯 <b>Qabul qiluvchi:</b> {recipient_username}" if recipient_username else ""
+    formatted_rcp = format_recipient_link(recipient_username)
+    recipient_info = f"\n🎯 <b>Qabul qiluvchi:</b> {formatted_rcp}" if formatted_rcp else ""
 
     text = (
         "🔔 <b>YANGI XARID AMALGA OSHIRILDI!</b>\n\n"

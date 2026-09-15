@@ -32,6 +32,13 @@ async def start_web_server():
 
 async def start_bot():
     try:
+        try:
+            bot_info = await bot.get_me()
+            set_bot(bot, bot_info.username)
+            logging.info(f"🤖 Telegram Bot: @{bot_info.username}")
+        except Exception as e:
+            logging.warning(f"Bot info olishda ogohlantirish: {e}")
+
         await set_bot_commands(bot)
         if config.WEB_APP_URL.startswith("https://"):
             try:

@@ -46,10 +46,24 @@ app.add_middleware(
 
 # Reference to the running bot instance (set during startup in main.py)
 bot_instance = None
+bot_username = None
 
-def set_bot(bot):
-    global bot_instance
+def set_bot(bot, username: Optional[str] = None):
+    global bot_instance, bot_username
     bot_instance = bot
+    if username:
+        bot_username = username
+
+@app.get("/api/bot-info")
+async def get_bot_info():
+    uname = bot_username
+    if not uname and bot_instance:
+        try:
+            me = await bot_instance.get_me()
+            uname = me.username
+        except Exception:
+            pass
+    return {"username": uname or "stellar_gift_bot"}
 
 # ================= AUTH HELPER ================= #
 
@@ -224,7 +238,26 @@ async def get_products(stars_amount: Optional[int] = None):
         # Active payment methods
         payment_setting = await session.get(PaymentSetting, 1)
         payment_methods = []
+        card_info = None
         if payment_setting:
+            if getattr(payment_setting, "card_active", True):
+                c_num = getattr(payment_setting, "card_number", "8600 1234 5678 9012")
+                c_holder = getattr(payment_setting, "card_holder", "ANVAR S.")
+                b_name = getattr(payment_setting, "bank_name", "TBC Bank")
+                card_info = {
+                    "card_number": c_num,
+                    "card_holder": c_holder,
+                    "bank_name": b_name
+                }
+                payment_methods.append({
+                    "id": "card",
+                    "name": "Karta orqali to'lov",
+                    "icon": "💳",
+                    "type": "card",
+                    "card_number": c_num,
+                    "card_holder": c_holder,
+                    "bank_name": b_name
+                })
             if payment_setting.click_active:
                 payment_methods.append({"id": "click", "name": "Click", "icon": "💳", "type": "official"})
             if payment_setting.payme_active:
@@ -232,14 +265,20 @@ async def get_products(stars_amount: Optional[int] = None):
             if payment_setting.autopaycard_active:
                 payment_methods.append({"id": "autopaycard", "name": "AutoPayCard (Karta)", "icon": "⚠️", "type": "backup"})
 
+        from app.services.fragment import pricing_engine
+        star_base_cost = pricing_engine.get_fragment_star_base_uzs()
+        margin = pricing.margin_percent if pricing and pricing.margin_percent is not None else 20.0
+        star_sell = round(star_base_cost * (1 + margin / 100), 2)
+
         return {
-            "stars_unit_cost_uzs": round(pricing.stars_cost_ton * pricing.ton_rate_uzs, 2),
-            "stars_unit_sell_uzs": round((pricing.stars_cost_ton * pricing.ton_rate_uzs) * (1 + pricing.margin_percent / 100), 2),
+            "stars_unit_cost_uzs": star_base_cost,
+            "stars_unit_sell_uzs": star_sell,
             "stars_packages": stars_packages,
             "custom_stars_calc": custom_calc,
             "premium_packages": premium_packages,
             "gifts": gifts_list,
-            "payment_methods": payment_methods
+            "payment_methods": payment_methods,
+            "card_info": card_info
         }
 
 class TopupRequest(BaseModel):
@@ -398,6 +437,9 @@ async def create_order_endpoint(req: PurchaseRequest, user: User = Depends(get_c
         if req.product_type == "stars":
             calc = queries.calculate_stars_price(req.amount, pricing)
             cost_price = calc["cost_total_uzs"]
+        elif req.product_type == "premium":
+            prem_base = {"3": 138000, "6": 205000, "12": 375000}
+            cost_price = prem_base.get(str(req.amount), req.total_price * 0.9)
 
         order, bonus, referrer = await queries.create_order(
             session=session,
@@ -421,7 +463,8 @@ async def create_order_endpoint(req: PurchaseRequest, user: User = Depends(get_c
                 total_price=order.total_price,
                 status=order.status,
                 new_balance=u.balance - req.total_price,
-                recipient_username=req.recipient_username
+                recipient_username=req.recipient_username,
+                buyer_username=user.username
             )
         )
         asyncio.create_task(
@@ -600,27 +643,40 @@ async def get_admin_dashboard(admin: User = Depends(get_current_admin)):
 
 @app.get("/api/admin/pricing")
 async def get_admin_pricing(admin: User = Depends(get_current_admin)):
+    from app.services.fragment import pricing_engine
     async with AsyncSessionLocal() as session:
         pricing = await queries.get_pricing(session)
-        star_unit = getattr(pricing, "star_unit_price_uzs", None) or 180.0
-        unit_cost = star_unit if star_unit > 0 else (pricing.stars_cost_ton * pricing.ton_rate_uzs)
-        unit_sell = unit_cost * (1 + pricing.margin_percent / 100)
+        frag_star_base = pricing_engine.get_star_base_cost()
+        margin = pricing.margin_percent if pricing and pricing.margin_percent is not None else 20.0
+        unit_sell = frag_star_base * (1 + margin / 100)
 
         discounts = []
         try:
-            discounts = json.loads(pricing.stars_discounts_json)
+            discounts = json.loads(pricing.stars_discounts_json) if pricing.stars_discounts_json else []
         except Exception:
             discounts = []
 
+        prem_bases = pricing_engine.get_premium_base_costs()
         prem_prices = {}
         try:
-            prem_prices = json.loads(pricing.premium_prices_json)
+            prem_prices = json.loads(pricing.premium_prices_json) if pricing.premium_prices_json else {}
         except Exception:
-            prem_prices = {"3": 142000, "6": 210000, "12": 380000}
+            prem_prices = {}
+        
+        # Ensure default prices if empty
+        if not prem_prices:
+            prem_prices = {"3": 143000, "6": 210000, "12": 380000}
+
+        # Calculate margins
+        prem_margins = {}
+        for k in ["3", "6", "12"]:
+            base = prem_bases.get(k, 140000)
+            curr = prem_prices.get(k, base + 5000)
+            prem_margins[k] = max(0, curr - base)
 
         gifts = []
         try:
-            gifts = json.loads(pricing.gifts_json)
+            gifts = json.loads(pricing.gifts_json) if pricing.gifts_json else []
         except Exception:
             gifts = [
                 {"id": "bear", "name": "Teddy Bear", "price_uzs": 64000, "icon": "🧸"},
@@ -628,25 +684,32 @@ async def get_admin_pricing(admin: User = Depends(get_current_admin)):
                 {"id": "rocket", "name": "Cosmo Rocket", "price_uzs": 120000, "icon": "🚀"}
             ]
 
+        gifts_bases = pricing_engine.get_gifts_base_costs()
+
         return {
             "stars_cost_ton": pricing.stars_cost_ton,
             "ton_rate_uzs": pricing.ton_rate_uzs,
-            "margin_percent": pricing.margin_percent,
-            "star_unit_price_uzs": star_unit,
-            "unit_cost_uzs": round(unit_cost, 2),
+            "margin_percent": margin,
+            "fragment_stars_base_uzs": frag_star_base,
+            "star_unit_price_uzs": frag_star_base,
+            "unit_cost_uzs": frag_star_base,
             "unit_sell_uzs": round(unit_sell, 2),
             "discounts": discounts,
+            "fragment_premium_bases": prem_bases,
             "premium_prices": prem_prices,
-            "gifts": gifts
+            "premium_margins": prem_margins,
+            "gifts": gifts,
+            "fragment_gifts_base_uzs": gifts_bases
         }
 
 class PricingUpdateRequest(BaseModel):
     stars_cost_ton: float = 0.0021
-    ton_rate_uzs: float = 38000.0
-    margin_percent: float = 15.0
+    ton_rate_uzs: float = 14800.0
+    margin_percent: float = 20.0
     star_unit_price_uzs: Optional[float] = None
     discounts: Optional[List[Dict[str, Any]]] = None
     premium_prices: Optional[Dict[str, Any]] = None
+    premium_margins: Optional[Dict[str, Any]] = None
     gifts: Optional[List[Dict[str, Any]]] = None
 
 @app.post("/api/admin/pricing")
@@ -783,7 +846,7 @@ async def get_admin_channels(admin: User = Depends(get_current_admin)):
 
 class ChannelCreateRequest(BaseModel):
     username_or_link: str
-    title: str
+    title: Optional[str] = None
     req_type: str = "ordinary" # ordinary, join_request, external
     is_detected: bool = False
 
@@ -793,10 +856,29 @@ async def create_channel_endpoint(
     admin: User = Depends(get_current_admin)
 ):
     async with AsyncSessionLocal() as session:
+        link = req.username_or_link.strip()
+        title = (req.title or "").strip()
+
+        # If title is empty, auto-detect title from Telegram
+        if not title and bot_instance:
+            try:
+                target = link
+                if "t.me/" in target:
+                    target = target.split("t.me/")[-1].split("/")[0].replace("+", "")
+                if not target.startswith("@") and not target.startswith("-100") and not target.isdigit():
+                    target = f"@{target}"
+                chat = await bot_instance.get_chat(target)
+                title = chat.title or chat.full_name or link
+            except Exception as err:
+                logger.warning(f"Could not auto-fetch title for {link}: {err}")
+                title = link
+        elif not title:
+            title = link
+
         ch = await queries.add_or_update_channel(
             session=session,
-            username_or_link=req.username_or_link,
-            title=req.title,
+            username_or_link=link,
+            title=title,
             req_type=req.req_type,
             is_detected=req.is_detected
         )
@@ -805,9 +887,9 @@ async def create_channel_endpoint(
             admin_id=admin.id,
             admin_username=admin.username,
             action="Majburiy kanal qo'shdi/yangiladi",
-            details=f"{req.title} ({req.username_or_link}, {req.req_type})"
+            details=f"{title} ({link}, {req.req_type})"
         )
-        return {"success": True, "channel_id": ch.id}
+        return {"success": True, "channel_id": ch.id, "title": title}
 
 @app.delete("/api/admin/channels/{channel_id}")
 async def delete_channel_endpoint(
@@ -823,6 +905,25 @@ async def delete_channel_endpoint(
             action=f"Majburiy kanalni o'chirdi (ID: {channel_id})"
         )
         return {"success": True}
+
+@app.post("/api/admin/channels/{channel_id}/toggle")
+async def toggle_channel_endpoint(
+    channel_id: int,
+    admin: User = Depends(get_current_admin)
+):
+    async with AsyncSessionLocal() as session:
+        ch = await session.get(ChannelRequirement, channel_id)
+        if not ch:
+            raise HTTPException(status_code=404, detail="Kanal topilmadi")
+        ch.is_active = not ch.is_active
+        await session.commit()
+        await queries.log_admin_action(
+            session=session,
+            admin_id=admin.id,
+            admin_username=admin.username,
+            action=f"Kanal holatini o'zgartirdi (ID: {channel_id}, active: {ch.is_active})"
+        )
+        return {"success": True, "is_active": ch.is_active}
 
 # ================= ADMIN PROMOCODES ================= #
 
@@ -914,6 +1015,10 @@ async def get_payment_settings_endpoint(admin: User = Depends(get_current_admin)
         return {
             "click_active": p.click_active if p else True,
             "payme_active": p.payme_active if p else True,
+            "card_active": getattr(p, "card_active", True) if p else True,
+            "card_number": getattr(p, "card_number", "8600 1234 5678 9012") if p else "8600 1234 5678 9012",
+            "card_holder": getattr(p, "card_holder", "ANVAR S.") if p else "ANVAR S.",
+            "bank_name": getattr(p, "bank_name", "TBC Bank") if p else "TBC Bank",
             "autopaycard_active": p.autopaycard_active if p else False,
             "autopaycard_last4": p.autopaycard_last4 if p else "6412",
             "autopaycard_email": p.autopaycard_email if p else "payments.stellar@gmail.com",
@@ -921,9 +1026,13 @@ async def get_payment_settings_endpoint(admin: User = Depends(get_current_admin)
         }
 
 class PaymentSettingsUpdate(BaseModel):
-    click_active: bool
-    payme_active: bool
-    autopaycard_active: bool
+    click_active: bool = True
+    payme_active: bool = True
+    card_active: bool = True
+    card_number: Optional[str] = "8600 1234 5678 9012"
+    card_holder: Optional[str] = "ANVAR S."
+    bank_name: Optional[str] = "TBC Bank"
+    autopaycard_active: bool = False
     autopaycard_api_key: Optional[str] = None
     autopaycard_last4: Optional[str] = None
     autopaycard_email: Optional[str] = None
@@ -940,6 +1049,13 @@ async def update_payment_settings_endpoint(
             session.add(p)
         p.click_active = req.click_active
         p.payme_active = req.payme_active
+        p.card_active = req.card_active
+        if req.card_number is not None:
+            p.card_number = req.card_number.strip()
+        if req.card_holder is not None:
+            p.card_holder = req.card_holder.strip()
+        if req.bank_name is not None:
+            p.bank_name = req.bank_name.strip()
         p.autopaycard_active = req.autopaycard_active
         if req.autopaycard_api_key is not None:
             p.autopaycard_api_key = req.autopaycard_api_key
@@ -953,8 +1069,8 @@ async def update_payment_settings_endpoint(
             session=session,
             admin_id=admin.id,
             admin_username=admin.username,
-            action="To'lov tizimlari holatini o'zgartirdi",
-            details=f"Click: {req.click_active}, Payme: {req.payme_active}, AutoPayCard: {req.autopaycard_active}"
+            action="To'lov tizimlari va karta sozlamalarini yangiladi",
+            details=f"Click: {p.click_active}, Payme: {p.payme_active}, Karta: {p.card_active} ({p.card_number})"
         )
         return {"success": True}
 
@@ -1077,13 +1193,14 @@ async def get_audit_logs(admin: User = Depends(get_current_admin)):
 
 class BroadcastRequest(BaseModel):
     segment: str = "all" # all, non_buyers, active, referral
-    mode: str = "write" # write, forward, postbot
+    mode: str = "write" # write, post_link, forward
     text: Optional[str] = None
     photo_url: Optional[str] = None
     button_text: Optional[str] = None
     button_url: Optional[str] = None
-    forward_channel: Optional[str] = None
-    postbot_msg_id: Optional[str] = None
+    buttons: Optional[List[Dict[str, str]]] = None # [{"text": "...", "url": "..."}]
+    post_link: Optional[str] = None # e.g. https://t.me/channel/123
+    forward_mode: bool = False # True = forward_message, False = copy_message
 
 latest_broadcast_status = {
     "is_running": False,
@@ -1138,17 +1255,58 @@ async def run_broadcast_queue(recipients: List[int], req: BroadcastRequest, admi
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
 
-    reply_markup = None
-    if req.button_text:
+    # Construct multiple inline buttons if provided
+    inline_keyboard = []
+    if req.buttons:
+        for b in req.buttons:
+            t = (b.get("text") or "").strip()
+            u = (b.get("url") or "").strip()
+            if t and u and (u.startswith("https://") or u.startswith("http://") or u.startswith("tg://")):
+                inline_keyboard.append([InlineKeyboardButton(text=t, url=u)])
+    elif req.button_text:
         b_url = req.button_url or config.WEB_APP_URL
         if b_url.startswith("https://") or b_url.startswith("http://"):
-            reply_markup = InlineKeyboardMarkup(
-                inline_keyboard=[[InlineKeyboardButton(text=req.button_text, url=b_url)]]
-            )
+            inline_keyboard.append([InlineKeyboardButton(text=req.button_text, url=b_url)])
+
+    reply_markup = InlineKeyboardMarkup(inline_keyboard=inline_keyboard) if inline_keyboard else None
+
+    # Parse channel post link if provided
+    post_info = None
+    if req.post_link:
+        try:
+            clean_link = req.post_link.strip().rstrip("/")
+            parts = clean_link.split("/")
+            if len(parts) >= 2:
+                msg_id = int(parts[-1])
+                chat_id_or_user = parts[-2]
+                if chat_id_or_user == "c" and len(parts) >= 3:
+                    chat_ref = int("-100" + parts[-3])
+                elif chat_id_or_user.isdigit() or chat_id_or_user.startswith("-"):
+                    chat_ref = int(chat_id_or_user)
+                else:
+                    chat_ref = f"@{chat_id_or_user}" if not chat_id_or_user.startswith("@") else chat_id_or_user
+                post_info = (chat_ref, msg_id)
+        except Exception as e:
+            logger.warning(f"Failed to parse broadcast post link ({req.post_link}): {e}")
 
     for uid in recipients:
         try:
-            if req.photo_url and req.photo_url.startswith("http"):
+            if post_info:
+                chat_ref, msg_id = post_info
+                if req.forward_mode:
+                    await bot_instance.forward_message(
+                        chat_id=uid,
+                        from_chat_id=chat_ref,
+                        message_id=msg_id
+                    )
+                else:
+                    await bot_instance.copy_message(
+                        chat_id=uid,
+                        from_chat_id=chat_ref,
+                        message_id=msg_id,
+                        reply_markup=reply_markup
+                    )
+            elif req.photo_url and req.photo_url.startswith("http"):
                 await bot_instance.send_photo(
                     chat_id=uid,
                     photo=req.photo_url,
@@ -1165,7 +1323,7 @@ async def run_broadcast_queue(recipients: List[int], req: BroadcastRequest, admi
             await asyncio.sleep(0.04) # ~25-30 messages per second rate limiter
         except TelegramForbiddenError:
             latest_broadcast_status["blocked"] += 1
-        except Exception:
+        except Exception as e:
             latest_broadcast_status["failed"] += 1
 
     latest_broadcast_status["is_running"] = False

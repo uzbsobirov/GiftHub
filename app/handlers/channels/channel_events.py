@@ -20,32 +20,39 @@ async def on_bot_chat_member_updated(event: ChatMemberUpdated):
 
     if new_status in [ChatMemberStatus.ADMINISTRATOR] and old_status not in [ChatMemberStatus.ADMINISTRATOR]:
         title = chat.title or "Noma'lum Kanal"
-        username_or_link = f"@{chat.username}" if chat.username else f"https://t.me/c/{str(chat.id).replace('-100', '')}"
+        bot = event.bot
+        invite_link = f"@{chat.username}" if chat.username else f"https://t.me/c/{str(chat.id).replace('-100', '')}"
+        if not chat.username:
+            try:
+                exported = await bot.export_chat_invite_link(chat.id)
+                if exported:
+                    invite_link = exported
+            except Exception:
+                pass
 
         async with AsyncSessionLocal() as session:
-            # Register as newly detected channel
+            # Register directly as active channel
             await queries.add_or_update_channel(
                 session=session,
-                username_or_link=username_or_link,
+                username_or_link=invite_link,
                 title=title,
                 req_type="ordinary",
                 chat_id=chat.id,
-                is_detected=True
+                is_detected=False
             )
 
         # Notify admins
-        bot = event.bot
         for admin_id_str in config.ADMINS:
             try:
                 admin_id = int(admin_id_str)
                 await bot.send_message(
                     chat_id=admin_id,
                     text=(
-                        f"📣 <b>Yangi kanal aniqlandi!</b>\n\n"
+                        f"📣 <b>Yangi kanal qo'shildi va faollashtirildi!</b>\n\n"
                         f"Nomi: <b>{title}</b>\n"
-                        f"Havola: {username_or_link}\n"
+                        f"Havola: {invite_link}\n"
                         f"ID: <code>{chat.id}</code>\n\n"
-                        f"Admin panelda ushbu kanalni majburiy obunalar ro'yxatiga tasdiqlashingiz mumkin."
+                        f"✅ Kanal admin panel va majburiy obuna ro'yxatida avtomatik paydo bo'ldi."
                     )
                 )
             except Exception:

@@ -14,6 +14,10 @@ ADMIN_APP_URL = env.str("ADMIN_APP_URL", default="http://localhost:8000/admin")
 WEB_HOST = env.str("WEB_HOST", default="0.0.0.0")
 WEB_PORT = env.int("WEB_PORT", default=8000)
 
+# Qo'llab-quvvatlash va Kanal sozlamalari (Ixtiyoriy)
+SUPPORT_URL = env.str("SUPPORT_URL", default="")
+NEWS_CHANNEL_URL = env.str("NEWS_CHANNEL_URL", default="")
+
 # PostgreSQL Database sozlamalari
 DB_USER = env.str("DB_USER", default="postgres")
 DB_PASS = env.str("DB_PASS", default="1234")

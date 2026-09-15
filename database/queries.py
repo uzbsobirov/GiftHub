@@ -144,39 +144,15 @@ async def update_pricing(
     return pricing
 
 def calculate_stars_price(amount: int, pricing: PricingSetting) -> Dict[str, Any]:
-    # Determine base unit cost
-    if getattr(pricing, "star_unit_price_uzs", None) and pricing.star_unit_price_uzs > 0:
-        unit_cost_uzs = pricing.star_unit_price_uzs
-    else:
-        unit_cost_uzs = pricing.stars_cost_ton * pricing.ton_rate_uzs
-
-    unit_sell_uzs = unit_cost_uzs * (1.0 + (pricing.margin_percent / 100.0))
-
-    base_total = unit_sell_uzs * amount
-    cost_total = unit_cost_uzs * amount
-
-    # Apply volume discounts if applicable
-    applied_discount = 0.0
+    from app.services.fragment import pricing_engine
+    discounts = []
     try:
-        discounts = json.loads(pricing.stars_discounts_json)
-        # sort descending by min_amount
-        discounts.sort(key=lambda x: x.get("min_amount", 0), reverse=True)
-        for d in discounts:
-            if amount >= d.get("min_amount", 0):
-                applied_discount = float(d.get("discount_pct", 0))
-                break
+        if pricing and pricing.stars_discounts_json:
+            discounts = json.loads(pricing.stars_discounts_json)
     except Exception:
-        pass
-
-    final_total = base_total * (1.0 - (applied_discount / 100.0))
-    return {
-        "amount": amount,
-        "unit_cost_uzs": round(unit_cost_uzs, 2),
-        "unit_sell_uzs": round(unit_sell_uzs, 2),
-        "discount_percent": applied_discount,
-        "total_price_uzs": round(final_total),
-        "cost_total_uzs": round(cost_total)
-    }
+        discounts = []
+    margin = pricing.margin_percent if pricing and pricing.margin_percent is not None else 20.0
+    return pricing_engine.calculate_stars(amount=amount, margin_percent=margin, discounts=discounts)
 
 # ================= ORDERS & TRANSACTIONS ================= #
 
