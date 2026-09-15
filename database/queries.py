@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import (
     User, PricingSetting, Order, Transaction, ChannelRequirement,
     AdminAuditLog, ReferralSetting, PaymentSetting, BroadcastDraft,
-    PromoCode, PromoCodeUsage
+    PromoCode, PromoCodeUsage, FragmentSetting
 )
 
 # ================= USER QUERIES ================= #
@@ -299,19 +299,21 @@ async def add_or_update_channel(
     title: str,
     req_type: str = "ordinary",
     chat_id: Optional[int] = None,
-    is_detected: bool = False
+    is_detected: bool = False,
+    is_active: Optional[bool] = None
 ) -> ChannelRequirement:
     # Check if already exists
     res = await session.execute(
         select(ChannelRequirement).where(ChannelRequirement.username_or_link == username_or_link)
     )
     ch = res.scalars().first()
+    active_flag = (not is_detected) if is_active is None else is_active
     if ch:
         ch.title = title
         ch.req_type = req_type
         if chat_id:
             ch.chat_id = chat_id
-        ch.is_active = True
+        ch.is_active = active_flag
         ch.is_detected = is_detected
     else:
         ch = ChannelRequirement(
@@ -319,12 +321,26 @@ async def add_or_update_channel(
             username_or_link=username_or_link,
             title=title,
             req_type=req_type,
-            is_active=True,
+            is_active=active_flag,
             is_detected=is_detected
         )
         session.add(ch)
     await session.commit()
     await session.refresh(ch)
+    return ch
+
+async def confirm_detected_channel(
+    session: AsyncSession,
+    channel_id: int,
+    req_type: str = "ordinary"
+) -> Optional[ChannelRequirement]:
+    ch = await session.get(ChannelRequirement, channel_id)
+    if ch:
+        ch.is_detected = False
+        ch.is_active = True
+        ch.req_type = req_type
+        await session.commit()
+        await session.refresh(ch)
     return ch
 
 async def delete_channel(session: AsyncSession, channel_id: int):
@@ -535,4 +551,82 @@ async def apply_promo_code(
         }
 
     return {"success": False, "detail": "Noma'lum promo-kod turi"}
+
+
+# ================= FRAGMENT SETTINGS & FULFILLMENT ================= #
+
+async def get_fragment_settings(session: AsyncSession) -> FragmentSetting:
+    setting = await session.get(FragmentSetting, 1)
+    if not setting:
+        setting = FragmentSetting(
+            id=1,
+            is_auto_buy=True,
+            ton_wallet_address="",
+            ton_wallet_mnemonic="",
+            tonapi_key="",
+            network="mainnet",
+            min_ton_balance=1.0,
+            simulation_mode=False
+        )
+        session.add(setting)
+        await session.commit()
+    return setting
+
+async def update_fragment_settings(
+    session: AsyncSession,
+    is_auto_buy: Optional[bool] = None,
+    ton_wallet_address: Optional[str] = None,
+    ton_wallet_mnemonic: Optional[str] = None,
+    tonapi_key: Optional[str] = None,
+    network: Optional[str] = None,
+    min_ton_balance: Optional[float] = None,
+    simulation_mode: Optional[bool] = None
+) -> FragmentSetting:
+    setting = await get_fragment_settings(session)
+    if is_auto_buy is not None:
+        setting.is_auto_buy = is_auto_buy
+    if ton_wallet_address is not None:
+        setting.ton_wallet_address = ton_wallet_address.strip()
+    if ton_wallet_mnemonic is not None:
+        setting.ton_wallet_mnemonic = ton_wallet_mnemonic.strip()
+    if tonapi_key is not None:
+        setting.tonapi_key = tonapi_key.strip()
+    if network is not None:
+        setting.network = network.strip().lower()
+    if min_ton_balance is not None:
+        setting.min_ton_balance = min_ton_balance
+    if simulation_mode is not None:
+        setting.simulation_mode = simulation_mode
+    setting.updated_at = datetime.utcnow()
+    await session.commit()
+    return setting
+
+async def update_order_fulfillment(
+    session: AsyncSession,
+    order_id: int,
+    fulfillment_status: str,
+    status: Optional[str] = None,
+    fragment_req_id: Optional[str] = None,
+    fragment_payload: Optional[str] = None,
+    fragment_tx_hash: Optional[str] = None,
+    fulfillment_error: Optional[str] = None
+) -> Optional[Order]:
+    order = await session.get(Order, order_id)
+    if not order:
+        return None
+    order.fulfillment_status = fulfillment_status
+    if status is not None:
+        order.status = status
+        if status == "done":
+            order.completed_at = datetime.utcnow()
+    if fragment_req_id is not None:
+        order.fragment_req_id = fragment_req_id
+    if fragment_payload is not None:
+        order.fragment_payload = fragment_payload
+    if fragment_tx_hash is not None:
+        order.fragment_tx_hash = fragment_tx_hash
+    if fulfillment_error is not None:
+        order.fulfillment_error = fulfillment_error
+    await session.commit()
+    return order
 

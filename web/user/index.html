@@ -575,6 +575,159 @@
     font-weight: 600;
   }
 
+  /* Light theme fixes for balance card & payment strict warning */
+  [data-theme="light"] .balance-card {
+    background: linear-gradient(135deg, #E6F7ED 0%, #D1FAE5 100%);
+    border: 1px solid #A7F3D0;
+    box-shadow: 0 4px 18px rgba(16, 185, 129, 0.12);
+  }
+  [data-theme="light"] .balance-card::after {
+    background: radial-gradient(circle, rgba(5, 150, 105, 0.15), transparent 70%);
+  }
+  [data-theme="light"] .balance-card .balance-label {
+    color: #047857;
+    font-weight: 600;
+  }
+  [data-theme="light"] .balance-card .balance-value {
+    color: #064E3B;
+  }
+  [data-theme="light"] .balance-card .balance-value span {
+    color: #059669;
+  }
+
+  [data-theme="light"] .payment-strict-warning {
+    background: #FFF1F2;
+    border: 1px solid #FECDD3;
+    box-shadow: 0 4px 16px rgba(225, 29, 72, 0.08);
+  }
+  [data-theme="light"] .psw-badge {
+    color: #BE123C;
+    background: #FFE4E6;
+    border: 1px solid #FDA4AF;
+  }
+  [data-theme="light"] .psw-body {
+    color: #9F1239;
+    font-weight: 500;
+  }
+  [data-theme="light"] .psw-body b {
+    color: #881337;
+    font-weight: 700;
+  }
+  [data-theme="light"] .psw-highlight {
+    color: #BE123C;
+    font-weight: 700;
+  }
+  [data-theme="light"] .amt-pill {
+    background: #FFFFFF;
+    border: 1px solid #D1E3DA;
+    color: #0F1A15;
+  }
+  [data-theme="light"] .amt-pill.sel {
+    border-color: #059669;
+    color: #059669;
+    background: #ECFDF5;
+  }
+  [data-theme="light"] .method {
+    background: #FFFFFF;
+    border: 1px solid #D1E3DA;
+    color: #0F1A15;
+  }
+  [data-theme="light"] .method.active {
+    border-color: #059669;
+    background: #ECFDF5;
+  }
+  [data-theme="light"] .bottom-nav {
+    background: #FFFFFF !important;
+    border-top: 1px solid #D1E3DA !important;
+  }
+  [data-theme="light"] .nav-item {
+    color: #64748B;
+  }
+  [data-theme="light"] .nav-item.active {
+    color: #059669;
+    background: #ECFDF5;
+  }
+  [data-theme="light"] .ref-card {
+    background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%) !important;
+    border: 1px solid #A7F3D0 !important;
+  }
+  [data-theme="light"] .ref-card .ref-title {
+    color: #064E3B;
+  }
+  [data-theme="light"] .ref-card .ref-bonus {
+    background: #A7F3D0;
+    color: #065F46;
+  }
+  [data-theme="light"] .ref-link {
+    background: #FFFFFF !important;
+    border-color: #D1E3DA !important;
+    color: #0F172A !important;
+  }
+  [data-theme="light"] .avatar {
+    border-color: #A7F3D0 !important;
+  }
+  [data-theme="light"] .field-input {
+    background: #F8FAFC !important;
+    border-color: #D1E3DA !important;
+    color: #0F172A !important;
+  }
+  [data-theme="light"] .field-input::placeholder {
+    color: #94A3B8 !important;
+  }
+  [data-theme="light"] .modal-box {
+    background: #FFFFFF !important;
+    border-color: #D1E3DA !important;
+    color: #0F172A !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15) !important;
+  }
+  [data-theme="light"] .apple-sticker-price {
+    background: #059669 !important;
+    color: #FFFFFF !important;
+    border-color: transparent !important;
+  }
+  [data-theme="light"] .back-btn {
+    background: #FFFFFF !important;
+    border-color: #D1E3DA !important;
+    color: #059669 !important;
+  }
+  [data-theme="light"] .stat-card {
+    background: #F8FAFC !important;
+    border-color: #D1E3DA !important;
+  }
+  [data-theme="light"] .stat-card .stat-val {
+    color: #0F172A !important;
+  }
+  [data-theme="light"] .search-bar {
+    background: #F8FAFC !important;
+    border-color: #D1E3DA !important;
+  }
+  [data-theme="light"] .search-bar input {
+    color: #0F172A !important;
+  }
+  [data-theme="light"] .chip {
+    background: #F8FAFC !important;
+    border-color: #D1E3DA !important;
+    color: #475569 !important;
+  }
+  [data-theme="light"] .chip.active {
+    background: #059669 !important;
+    color: #FFFFFF !important;
+  }
+  [data-theme="light"] .order-row {
+    border-bottom-color: #D1E3DA !important;
+  }
+  [data-theme="light"] .order-icon {
+    background: #F1F5F9 !important;
+  }
+  [data-theme="light"] .join-banner {
+    background: #ECFDF5 !important;
+    border-color: #A7F3D0 !important;
+    color: #065F46 !important;
+  }
+  [data-theme="light"] .join-banner b {
+    color: #064E3B !important;
+  }
+
   /* User Theme Toggle Button */
   .u-theme-btn {
     background: var(--surface);
@@ -786,11 +939,6 @@
       <div class="subscreen-title">⭐ Telegram Stars</div>
     </div>
 
-    <div class="fragment-rate-badge">
-      <span>⚡ Fragment jonli kursi:</span>
-      <b id="lblFragmentStarRate">1 ⭐ ≈ 176.46 so'm</b>
-    </div>
-
     <!-- Custom Stars Calculator -->
     <div class="custom-calc-card">
       <div class="ccc-title">Ixtiyoriy miqdorda Stars hisoblagich</div>
@@ -984,7 +1132,7 @@
         <div class="ref-title">Do'stlaringizni taklif qiling</div>
         <div class="ref-bonus">+5% bonus</div>
       </div>
-      <div class="ref-link"><span id="refLinkText">t.me/stellar_bot?start=ref_0</span><button onclick="copyRefLink()">Nusxalash</button></div>
+      <div class="ref-link"><span id="refLinkText">t.me/gifthubuzbot?start=ref_0</span><button onclick="copyRefLink()">Nusxalash</button></div>
       <div class="ref-stats"><div><b id="refCount">0</b> taklif</div><div><b id="refEarned">0</b> so'm bonus</div></div>
     </div>
 
@@ -1046,10 +1194,28 @@
 <script>
   // State
   let currentUser = null;
+  let botUsername = 'gifthubuzbot';
   let selectedTopupAmount = 50000;
   let selectedTopupMethod = 'card';
   let activeHistoryStatus = 'all';
   let currentProductToBuy = null;
+
+  async function fetchBotInfo() {
+    try {
+      const res = await fetch('/api/bot-info');
+      if(res.ok) {
+        const data = await res.json();
+        if(data.username) {
+          botUsername = data.username;
+          if(currentUser) {
+            const refLink = `https://t.me/${botUsername}?start=ref_${currentUser.id}`;
+            const el = document.getElementById('refLinkText');
+            if(el) el.innerText = refLink;
+          }
+        }
+      }
+    } catch(e){}
+  }
 
   // ================= THEME TOGGLE (TUNGI VA TONGI REJIM) ================= //
   function initUserTheme() {
@@ -1109,6 +1275,12 @@
     const initData = getInitData();
     if(initData) {
       headers['x-telegram-init-data'] = initData;
+    } else {
+      const sp = new URLSearchParams(window.location.search);
+      const uid = sp.get('auth_user_id') || sp.get('user_id');
+      if(uid) {
+        headers['x-auth-user-id'] = uid;
+      }
     }
     return headers;
   }
@@ -1201,7 +1373,7 @@
       setVal('profileJoinDate', currentUser.created_at || 'Bugun');
 
       // Referral
-      const refLink = `t.me/stellar_gift_bot?start=ref_${currentUser.id}`;
+      const refLink = `https://t.me/${botUsername}?start=ref_${currentUser.id}`;
       setVal('refLinkText', refLink);
       setVal('refCount', currentUser.referrals_count || 0);
       setVal('refEarned', Number(currentUser.referral_earnings || 0).toLocaleString('ru-RU'));
@@ -1354,8 +1526,8 @@
       updateCalcStarsPrice();
 
       // Card / P2P payment info
-      if(data.payment_methods && data.payment_methods.card_info) {
-        const cInfo = data.payment_methods.card_info;
+      const cInfo = data.card_info || (Array.isArray(data.payment_methods) ? data.payment_methods.find(m => m.type === 'card' || m.id === 'card') : null);
+      if(cInfo) {
         if(cInfo.card_number) {
           const numEl = document.getElementById('bcCardNumber');
           if(numEl) numEl.innerText = cInfo.card_number;
@@ -1723,9 +1895,44 @@
     if(el) el.scrollIntoView({ behavior: 'smooth' });
   }
 
+  // Theme toggle
+  function initUserTheme() {
+    const saved = localStorage.getItem('stellar_user_theme') || 'dark';
+    setUserTheme(saved);
+  }
+
+  function toggleUserTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = (current === 'dark') ? 'light' : 'dark';
+    setUserTheme(next);
+  }
+
+  function setUserTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    document.body.setAttribute('data-theme', t);
+    localStorage.setItem('stellar_user_theme', t);
+    const ic = document.getElementById('uThemeIcon');
+    if(ic) ic.innerText = (t === 'light') ? '☀️' : '🌙';
+  }
+
+  function copyCardNumber() {
+    const numEl = document.getElementById('bcCardNumber');
+    const text = numEl ? numEl.innerText.replace(/\s+/g, '') : '';
+    if(navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast("✓ Karta raqami nusxalandi!");
+      }).catch(() => {
+        prompt("Karta raqami:", text);
+      });
+    } else {
+      prompt("Karta raqami:", text);
+    }
+  }
+
   // Init
   (async function init() {
     initUserTheme();
+    try { await fetchBotInfo(); } catch(e){}
     try { await loadUser(); } catch(e) { console.warn("User load error:", e); }
     try { await checkGate(); } catch(e) { console.warn("Gate check error:", e); }
     try { await loadProducts(); } catch(e) { console.warn("Products load error:", e); }

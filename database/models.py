@@ -54,6 +54,11 @@ class Order(Base):
     cost_price = Column(Float, default=0.0)
     status = Column(String(32), default="pending", index=True) # pending, done, cancel
     recipient_username = Column(String(64), nullable=True)
+    fragment_req_id = Column(String(64), nullable=True)
+    fragment_payload = Column(Text, nullable=True)
+    fragment_tx_hash = Column(String(128), nullable=True)
+    fulfillment_status = Column(String(32), default="pending") # pending, processing, fulfilled, failed
+    fulfillment_error = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
 
@@ -124,6 +129,20 @@ class PaymentSetting(Base):
     autopaycard_last4 = Column(String(8), default="6412")
     autopaycard_email = Column(String(128), default="payments.stellar@gmail.com")
     autopaycard_webhook_url = Column(String(255), default="https://stellar-bot.uz/webhook/autopaycard")
+
+
+class FragmentSetting(Base):
+    __tablename__ = "fragment_settings"
+
+    id = Column(Integer, primary_key=True)
+    is_auto_buy = Column(Boolean, default=True) # Avtomatik xarid yoqilgan/o'chirilgan
+    ton_wallet_address = Column(String(128), default="") # Botning TON hamyon manzili
+    ton_wallet_mnemonic = Column(Text, default="") # 24 ta maxfiy seed so'zlar
+    tonapi_key = Column(String(128), default="") # TonAPI yoki Toncenter API kaliti
+    network = Column(String(32), default="mainnet") # mainnet, testnet
+    min_ton_balance = Column(Float, default=1.0) # Minimal TON qoldig'i ogohlantirish uchun
+    simulation_mode = Column(Boolean, default=False) # Haqiqiy TON sarflanmaydigan test rejimi
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class BroadcastDraft(Base):

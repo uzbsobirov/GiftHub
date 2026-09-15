@@ -69,6 +69,7 @@ async def get_bot_info():
 
 async def get_current_user(
     x_telegram_init_data: Optional[str] = Header(None),
+    x_auth_user_id: Optional[str] = Header(None),
     auth_user_id: Optional[int] = Query(None)
 ) -> User:
     """
@@ -86,27 +87,83 @@ async def get_current_user(
                     username=tg_user.get("username"),
                     photo_url=tg_user.get("photo_url")
                 )
+            else:
+                logging.warning(f"⚠️ Telegram initData haqiqiy emas yoki tekshiruvdan o'tmadi!")
 
-        # Fallback for development / mock preview
-        uid = auth_user_id or (int(config.ADMINS[0]) if config.ADMINS else 143547381)
-        user = await queries.get_user_by_id(session, uid)
+        # Explicit test / development user ID from query or custom header
+        effective_uid = auth_user_id
+        if not effective_uid and x_auth_user_id and x_auth_user_id.isdigit():
+            effective_uid = int(x_auth_user_id)
+
+        if effective_uid:
+            user = await queries.get_user_by_id(session, effective_uid)
+            if user:
+                return user
+            return await queries.get_or_create_user(
+                session=session,
+                user_id=effective_uid,
+                first_name=f"Foydalanuvchi {effective_uid}",
+                username=f"user_{effective_uid}"
+            )
+
+        # Standalone browser demo (when opened directly in browser without Telegram)
+        # Never impersonate real admin user for normal users!
+        demo_uid = 999999999
+        user = await queries.get_user_by_id(session, demo_uid)
         if not user:
             user = await queries.get_or_create_user(
                 session=session,
-                user_id=uid,
-                first_name="Anvar Sobirov",
-                username="uzbsobirov"
+                user_id=demo_uid,
+                first_name="Mehmon",
+                username="mehmon"
             )
         return user
 
 async def get_current_admin(
     x_telegram_init_data: Optional[str] = Header(None),
+    x_auth_user_id: Optional[str] = Header(None),
     auth_user_id: Optional[int] = Query(None)
 ) -> User:
-    user = await get_current_user(x_telegram_init_data, auth_user_id)
-    if user.role == "user" and str(user.id) not in config.ADMINS:
-        raise HTTPException(status_code=403, detail="Ruxsat berilmagan: Siz admin emassiz!")
-    return user
+    async with AsyncSessionLocal() as session:
+        if x_telegram_init_data:
+            tg_user = validate_init_data(x_telegram_init_data)
+            if tg_user and "id" in tg_user:
+                user = await queries.get_or_create_user(
+                    session=session,
+                    user_id=int(tg_user["id"]),
+                    first_name=tg_user.get("first_name", "Foydalanuvchi"),
+                    last_name=tg_user.get("last_name"),
+                    username=tg_user.get("username"),
+                    photo_url=tg_user.get("photo_url")
+                )
+                if user.role == "user" and str(user.id) not in config.ADMINS:
+                    raise HTTPException(status_code=403, detail="Ruxsat berilmagan: Siz admin emassiz!")
+                return user
+
+        effective_uid = auth_user_id
+        if not effective_uid and x_auth_user_id and x_auth_user_id.isdigit():
+            effective_uid = int(x_auth_user_id)
+
+        if effective_uid:
+            user = await queries.get_user_by_id(session, effective_uid)
+            if user and (user.role != "user" or str(user.id) in config.ADMINS):
+                return user
+            raise HTTPException(status_code=403, detail="Ruxsat berilmagan: Siz admin emassiz!")
+
+        # Standalone PC browser access for Admin Panel (development / server manager)
+        if config.ADMINS:
+            admin_uid = int(config.ADMINS[0])
+            admin_user = await queries.get_user_by_id(session, admin_uid)
+            if admin_user:
+                return admin_user
+            return await queries.get_or_create_user(
+                session=session,
+                user_id=admin_uid,
+                first_name="Admin",
+                username="admin"
+            )
+
+        raise HTTPException(status_code=403, detail="Ruxsat berilmagan: Admin mavjud emas!")
 
 # ================= USER API ROUTES ================= #
 
@@ -452,6 +509,12 @@ async def create_order_endpoint(req: PurchaseRequest, user: User = Depends(get_c
             recipient_username=req.recipient_username
         )
 
+        # Trigger Fragment automated purchase & delivery
+        from app.services.fragment import fragment_client
+        asyncio.create_task(
+            fragment_client.fulfill_order(order_id=order.id, bot=bot_instance)
+        )
+
         # Trigger background notifications
         asyncio.create_task(
             send_order_created_notification(
@@ -759,6 +822,11 @@ async def get_admin_orders(
                 "total_price": round(o.total_price),
                 "cost_price": round(o.cost_price),
                 "status": o.status,
+                "recipient_username": o.recipient_username,
+                "fulfillment_status": o.fulfillment_status or "pending",
+                "fragment_payload": o.fragment_payload,
+                "fragment_tx_hash": o.fragment_tx_hash,
+                "fulfillment_error": o.fulfillment_error,
                 "created_at": o.created_at.strftime("%d %b, %H:%M") if o.created_at else ""
             })
         return result
@@ -798,6 +866,66 @@ async def update_order_status_endpoint(
             details=f"Yangi holat: {req.status}"
         )
         return {"success": True, "status": order.status}
+
+@app.post("/api/admin/orders/{order_id}/fulfill-fragment")
+async def fulfill_order_fragment_endpoint(
+    order_id: int,
+    admin: User = Depends(get_current_admin)
+):
+    from app.services.fragment import fragment_client
+    res = await fragment_client.fulfill_order(order_id=order_id, bot=bot_instance)
+    return res
+
+@app.get("/api/admin/fragment/settings")
+async def get_fragment_settings_endpoint(admin: User = Depends(get_current_admin)):
+    from app.services.fragment import fragment_client
+    async with AsyncSessionLocal() as session:
+        s = await queries.get_fragment_settings(session)
+        balance = await fragment_client.get_wallet_balance(s.ton_wallet_address, s.network)
+        return {
+            "is_auto_buy": s.is_auto_buy,
+            "ton_wallet_address": s.ton_wallet_address,
+            "has_mnemonic": bool(s.ton_wallet_mnemonic),
+            "ton_wallet_mnemonic_masked": "••••••••••••••••••••" if s.ton_wallet_mnemonic else "",
+            "tonapi_key": s.tonapi_key,
+            "network": s.network,
+            "min_ton_balance": s.min_ton_balance,
+            "simulation_mode": s.simulation_mode,
+            "wallet_balance_ton": balance
+        }
+
+class FragmentSettingsUpdate(BaseModel):
+    is_auto_buy: Optional[bool] = None
+    ton_wallet_address: Optional[str] = None
+    ton_wallet_mnemonic: Optional[str] = None
+    tonapi_key: Optional[str] = None
+    network: Optional[str] = None
+    min_ton_balance: Optional[float] = None
+    simulation_mode: Optional[bool] = None
+
+@app.post("/api/admin/fragment/settings")
+async def update_fragment_settings_endpoint(
+    req: FragmentSettingsUpdate,
+    admin: User = Depends(get_current_admin)
+):
+    async with AsyncSessionLocal() as session:
+        # If mnemonic is masked with dots, do not overwrite existing
+        mnemonic = req.ton_wallet_mnemonic
+        if mnemonic and "•••" in mnemonic:
+            mnemonic = None
+
+        s = await queries.update_fragment_settings(
+            session=session,
+            is_auto_buy=req.is_auto_buy,
+            ton_wallet_address=req.ton_wallet_address,
+            ton_wallet_mnemonic=mnemonic,
+            tonapi_key=req.tonapi_key,
+            network=req.network,
+            min_ton_balance=req.min_ton_balance,
+            simulation_mode=req.simulation_mode
+        )
+        return {"success": True, "message": "Fragment va TON sozlamalari muvaffaqiyatli saqlandi!"}
+
 
 @app.get("/api/admin/users")
 async def get_admin_users(
@@ -924,6 +1052,28 @@ async def toggle_channel_endpoint(
             action=f"Kanal holatini o'zgartirdi (ID: {channel_id}, active: {ch.is_active})"
         )
         return {"success": True, "is_active": ch.is_active}
+
+class ChannelConfirmRequest(BaseModel):
+    req_type: str = "ordinary"
+
+@app.post("/api/admin/channels/{channel_id}/confirm")
+async def confirm_channel_endpoint(
+    channel_id: int,
+    req: ChannelConfirmRequest,
+    admin: User = Depends(get_current_admin)
+):
+    async with AsyncSessionLocal() as session:
+        ch = await queries.confirm_detected_channel(session, channel_id, req.req_type)
+        if not ch:
+            raise HTTPException(status_code=404, detail="Kanal topilmadi")
+        await queries.log_admin_action(
+            session=session,
+            admin_id=admin.id,
+            admin_username=admin.username,
+            action=f"Aniqlangan kanalni tasdiqladi va faollashtirdi: ID {channel_id}",
+            details=f"{ch.title} ({ch.username_or_link}, {req.req_type})"
+        )
+        return {"success": True, "channel": {"id": ch.id, "title": ch.title, "req_type": ch.req_type}}
 
 # ================= ADMIN PROMOCODES ================= #
 
@@ -1193,7 +1343,7 @@ async def get_audit_logs(admin: User = Depends(get_current_admin)):
 
 class BroadcastRequest(BaseModel):
     segment: str = "all" # all, non_buyers, active, referral
-    mode: str = "write" # write, post_link, forward
+    mode: str = "write" # write, post_link, forward, postbot
     text: Optional[str] = None
     photo_url: Optional[str] = None
     button_text: Optional[str] = None
@@ -1201,6 +1351,8 @@ class BroadcastRequest(BaseModel):
     buttons: Optional[List[Dict[str, str]]] = None # [{"text": "...", "url": "..."}]
     post_link: Optional[str] = None # e.g. https://t.me/channel/123
     forward_mode: bool = False # True = forward_message, False = copy_message
+    postbot_code: Optional[str] = None
+    draft_id: Optional[int] = None
 
 latest_broadcast_status = {
     "is_running": False,
@@ -1214,6 +1366,30 @@ latest_broadcast_status = {
 @app.get("/api/admin/broadcast/status")
 async def get_broadcast_status(admin: User = Depends(get_current_admin)):
     return latest_broadcast_status
+
+@app.get("/api/admin/broadcast/latest-draft")
+async def get_latest_broadcast_draft_endpoint(admin: User = Depends(get_current_admin)):
+    async with AsyncSessionLocal() as session:
+        res = await session.execute(
+            select(BroadcastDraft).order_by(BroadcastDraft.id.desc()).limit(1)
+        )
+        d = res.scalars().first()
+        if not d:
+            return {"has_draft": False}
+        return {
+            "has_draft": True,
+            "draft": {
+                "id": d.id,
+                "mode": d.mode,
+                "text": d.text,
+                "photo": d.photo,
+                "button_text": d.button_text,
+                "button_url": d.button_url,
+                "forward_chat_id": d.forward_chat_id,
+                "forward_message_id": d.forward_message_id,
+                "created_at": d.created_at.strftime("%d %b, %H:%M") if d.created_at else ""
+            }
+        }
 
 @app.post("/api/admin/broadcast")
 async def send_broadcast_endpoint(req: BroadcastRequest, admin: User = Depends(get_current_admin)):
@@ -1288,6 +1464,12 @@ async def run_broadcast_queue(recipients: List[int], req: BroadcastRequest, admi
                 post_info = (chat_ref, msg_id)
         except Exception as e:
             logger.warning(f"Failed to parse broadcast post link ({req.post_link}): {e}")
+
+    if not post_info and req.draft_id:
+        async with AsyncSessionLocal() as session:
+            draft = await session.get(BroadcastDraft, req.draft_id)
+            if draft and draft.forward_chat_id and draft.forward_message_id:
+                post_info = (draft.forward_chat_id, draft.forward_message_id)
 
     for uid in recipients:
         try:

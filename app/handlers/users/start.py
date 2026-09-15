@@ -17,11 +17,14 @@ async def cmd_start(message: Message, command: CommandObject):
 
     referrer_id = None
     args = command.args
-    if args and args.startswith("ref_"):
-        try:
-            referrer_id = int(args.replace("ref_", ""))
-        except ValueError:
-            pass
+    if args:
+        if args.startswith("ref_"):
+            try:
+                referrer_id = int(args.replace("ref_", ""))
+            except ValueError:
+                pass
+        elif args.isdigit():
+            referrer_id = int(args)
 
     async with AsyncSessionLocal() as session:
         user = await queries.get_or_create_user(

@@ -185,14 +185,58 @@
   .main-content {
     flex: 1; padding: 24px 30px calc(30px + env(safe-area-inset-bottom));
     max-width: 1280px; min-width: 0;
+  }  /* Crisp visible scrollbars in light and dark mode everywhere */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    display: block;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.18);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+  }
+  [data-theme="light"] ::-webkit-scrollbar-track {
+    background: #E2E8F0;
+  }
+  [data-theme="light"] ::-webkit-scrollbar-thumb {
+    background: #94A3B8;
+  }
+  [data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+    background: #64748B;
   }
 
-  /* Quick Nav Pills (Mobile/Scrollable) */
+  /* Quick Nav Pills (Mobile/Scrollable with prominent visible scrollbar) */
   .quick-nav {
-    display: none; gap: 8px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 16px;
-    scrollbar-width: none;
+    display: none; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 18px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) rgba(0,0,0,0.15);
+    white-space: nowrap;
   }
-  .quick-nav::-webkit-scrollbar { display: none; }
+  .quick-nav::-webkit-scrollbar {
+    height: 6px;
+    display: block !important;
+  }
+  .quick-nav::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px;
+  }
+  .quick-nav::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 10px;
+  }
+  [data-theme="light"] .quick-nav::-webkit-scrollbar-track {
+    background: #E2E8F0;
+  }
+  [data-theme="light"] .quick-nav::-webkit-scrollbar-thumb {
+    background: #059669;
+  }
   .q-pill {
     flex-shrink: 0; padding: 7px 14px; border-radius: 30px; font-size: 12px; font-weight: 600;
     background: var(--panel); border: 1px solid var(--line); color: var(--text-muted); cursor: pointer;
@@ -295,21 +339,69 @@
     background: var(--bg-elevated);
   }
 
-  /* Custom Styled Dropdowns / Selects */
+  /* Custom Styled Dropdowns / Selects (Sleek Glassmorphic & Modern) */
   .custom-select {
     appearance: none;
     -webkit-appearance: none;
-    background-image: var(--select-arrow);
+    background-color: var(--surface);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2300E676' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 12px center;
+    background-position: right 14px center;
     background-size: 16px 16px;
-    padding-right: 36px;
+    padding: 11px 42px 11px 15px;
+    font-size: 13.5px;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--line);
     cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: var(--transition);
+  }
+  [data-theme="light"] .custom-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23059669' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-color: #F8FAFC;
+    border-color: #CBD5E1;
+  }
+  .custom-select:hover {
+    border-color: var(--primary);
+    background-color: var(--surface-hover);
+  }
+  .custom-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+    background-color: var(--bg-elevated);
   }
   .custom-select option {
     background: var(--panel);
     color: var(--text);
-    padding: 10px;
+    padding: 12px;
+    font-size: 13.5px;
+    font-weight: 500;
+  }
+  [data-theme="light"] .custom-select option {
+    background: #FFFFFF;
+    color: #0F172A;
+  }
+
+  /* Table Responsive Scroll */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) var(--panel);
+    padding-bottom: 8px;
+  }
+  [data-theme="light"] .table-responsive {
+    scrollbar-color: #CBD5E1 #F8FAFC;
+  }
+  [data-theme="light"] .table-responsive table th {
+    background: #F1F5F9;
+    color: #475569;
+    border-bottom: 1px solid #CBD5E1;
+  }
+  [data-theme="light"] .table-responsive table td {
+    color: #0F172A;
+    border-bottom: 1px solid #E2E8F0;
   }
 
   /* ================= BUTTONS ================= */
@@ -521,6 +613,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
         To'lov usullari
       </div>
+      <div class="nav-item" data-view="fragment">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+        Fragment & TON
+      </div>
       <div class="nav-item" data-view="admins">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
         Adminlar
@@ -556,6 +652,7 @@
       <div class="q-pill" data-view="promos">Promo-kodlar</div>
       <div class="q-pill" data-view="referral">Referal</div>
       <div class="q-pill" data-view="payments">To'lovlar</div>
+      <div class="q-pill" data-view="fragment">Fragment & TON</div>
       <div class="q-pill" data-view="admins">Adminlar</div>
     </div>
 
@@ -810,56 +907,54 @@
           </div>
         </div>
 
-        <!-- Individual Gifts Grid -->
-        <div class="form-grid">
-          <!-- Teddy Bear -->
-          <div class="field-group" style="background:var(--surface);padding:14px;border-radius:var(--radius-md);border:1px solid var(--line);">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <label class="field-label" style="font-size:13px;font-weight:700;">Teddy Bear 🧸</label>
-              <span style="font-size:11px;color:var(--text-muted);">ID: bear</span>
+        <!-- Filter & Control Toolbar for Gifts -->
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);padding:14px;margin-bottom:18px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+            <div style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px;">
+              <span>🔍</span> Sovg'alarni saralash va filtrlash
             </div>
-            <div style="font-size:11.5px;color:var(--text-muted);margin:4px 0 8px;">
-              Fragment tannarxi: <b id="txtGiftBaseBear">50 000</b> so'm
-            </div>
-            <label class="field-label" style="font-size:11px;">Mijoz uchun individual narx (so'm):</label>
-            <input type="number" id="inpGiftBear" class="custom-input" value="64000" oninput="updateGiftsPreview()">
-            <div style="margin-top:8px;font-size:12px;color:var(--primary);font-weight:700;">
-              Sof foyda: <span id="txtGiftProfitBear">14 000</span> so'm
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span id="txtGiftsCount" style="font-size:12px;color:var(--text-muted);font-weight:600;">Jami: 0 ta sovg'a</span>
+              <button class="btn btn-primary btn-sm" type="button" id="btnShowAllGifts" onclick="toggleShowAllGifts()">📦 Barcha sovg'alarni chiqarish</button>
             </div>
           </div>
 
-          <!-- Neon Heart -->
-          <div class="field-group" style="background:var(--surface);padding:14px;border-radius:var(--radius-md);border:1px solid var(--line);">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <label class="field-label" style="font-size:13px;font-weight:700;">Neon Heart 💖</label>
-              <span style="font-size:11px;color:var(--text-muted);">ID: heart</span>
+          <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:10px;">
+            <div class="field-group">
+              <label class="field-label">Qidirish (Nom yoki ID)</label>
+              <input type="text" id="inpGiftSearch" class="custom-input" placeholder="Masalan: Bear, Rocket..." oninput="filterGiftsCatalog()">
             </div>
-            <div style="font-size:11.5px;color:var(--text-muted);margin:4px 0 8px;">
-              Fragment tannarxi: <b id="txtGiftBaseHeart">68 000</b> so'm
+            <div class="field-group">
+              <label class="field-label">Min narx (so'm)</label>
+              <input type="number" id="inpGiftMinPrice" class="custom-input" placeholder="Masalan: 50000" oninput="filterGiftsCatalog()">
             </div>
-            <label class="field-label" style="font-size:11px;">Mijoz uchun individual narx (so'm):</label>
-            <input type="number" id="inpGiftHeart" class="custom-input" value="85000" oninput="updateGiftsPreview()">
-            <div style="margin-top:8px;font-size:12px;color:var(--primary);font-weight:700;">
-              Sof foyda: <span id="txtGiftProfitHeart">17 000</span> so'm
+            <div class="field-group">
+              <label class="field-label">Maks narx (so'm)</label>
+              <input type="number" id="inpGiftMaxPrice" class="custom-input" placeholder="Masalan: 200000" oninput="filterGiftsCatalog()">
             </div>
-          </div>
-
-          <!-- Cosmo Rocket -->
-          <div class="field-group" style="background:var(--surface);padding:14px;border-radius:var(--radius-md);border:1px solid var(--line);">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <label class="field-label" style="font-size:13px;font-weight:700;">Cosmo Rocket 🚀</label>
-              <span style="font-size:11px;color:var(--text-muted);">ID: rocket</span>
+            <div class="field-group">
+              <label class="field-label">Kategoriya / Turi</label>
+              <select id="selGiftType" class="custom-select" onchange="filterGiftsCatalog()">
+                <option value="all">Barcha turlar</option>
+                <option value="3d">3D Sovg'alar</option>
+                <option value="vip">VIP Sovg'alar</option>
+                <option value="classic">Klassik Sovg'alar</option>
+              </select>
             </div>
-            <div style="font-size:11.5px;color:var(--text-muted);margin:4px 0 8px;">
-              Fragment tannarxi: <b id="txtGiftBaseRocket">95 000</b> so'm
-            </div>
-            <label class="field-label" style="font-size:11px;">Mijoz uchun individual narx (so'm):</label>
-            <input type="number" id="inpGiftRocket" class="custom-input" value="120000" oninput="updateGiftsPreview()">
-            <div style="margin-top:8px;font-size:12px;color:var(--primary);font-weight:700;">
-              Sof foyda: <span id="txtGiftProfitRocket">25 000</span> so'm
+            <div class="field-group">
+              <label class="field-label">Tartiblash (Saralash)</label>
+              <select id="selGiftSort" class="custom-select" onchange="filterGiftsCatalog()">
+                <option value="default">Odatiy tartib</option>
+                <option value="low_to_high">Narx: Arzondan qimmatga (Low to High)</option>
+                <option value="high_to_low">Narx: Qimmatdan arzonga (High to Low)</option>
+                <option value="name">Nom bo'yicha (A-Z)</option>
+              </select>
             </div>
           </div>
         </div>
+
+        <!-- Dynamic Gifts Grid -->
+        <div class="form-grid" id="giftsCatalogContainer"></div>
       </div>
     </section>
 
@@ -878,7 +973,7 @@
       <div class="card" style="padding:0;overflow:hidden;">
         <div class="table-responsive">
           <table>
-            <thead><tr><th>Kod</th><th>Foydalanuvchi</th><th>Mahsulot</th><th>Summa</th><th>Sana</th><th>Holat</th><th>Amallar</th></tr></thead>
+            <thead><tr><th>Kod</th><th>Xaridor</th><th>Qabul qiluvchi</th><th>Mahsulot</th><th>Summa</th><th>Sana</th><th>Holat</th><th>Fragment Yetkazish</th><th>Amallar</th></tr></thead>
             <tbody id="adminOrdersTable"></tbody>
           </table>
         </div>
@@ -927,6 +1022,7 @@
         <div class="seg-row" id="bcModePills">
           <button class="seg-btn active" data-mode="write" onclick="switchBcMode('write')">✍️ Oddiy xabar (Matn / Rasm)</button>
           <button class="seg-btn" data-mode="post_link" onclick="switchBcMode('post_link')">📢 Telegram postidan (Havola / Forward)</button>
+          <button class="seg-btn" data-mode="postbot" onclick="switchBcMode('postbot')">🤖 PostBot orqali</button>
         </div>
 
         <!-- 1. WRITE MODE -->
@@ -960,6 +1056,30 @@
             <label style="cursor:pointer;display:flex;align-items:center;gap:6px;">
               <input type="checkbox" id="bcForwardCheck" style="width:18px;height:18px;accent-color:var(--primary);">
             </label>
+          </div>
+        </div>
+
+        <!-- 3. POSTBOT MODE -->
+        <div id="bcBoxPostBot" style="display:none;">
+          <div class="field-group" style="margin-bottom:14px;">
+            <label class="field-label">PostBot ulashish kodi yoki havolasi</label>
+            <textarea id="bcPostBotCode" class="custom-textarea" rows="3" placeholder="@PostBot 6a3f9e... yoki https://t.me/postbot?start=..."></textarea>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">
+              💡 PostBot'da tayyorlagan reklamangizning kodi yoki havolasini kiriting. Yoki botga forward qilingan postni pastdagi tugma orqali darhol oling.
+            </div>
+          </div>
+
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div>
+              <div style="font-weight:700;font-size:13px;">Telegram botga yuborilgan tayyor post</div>
+              <div style="font-size:11.5px;color:var(--text-muted);" id="txtLatestDraftStatus">PostBot orqali botga xabar tashlangan bo'lsa uni yuklab olish</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" type="button" onclick="fetchLatestBotDraft()">📥 Oxirgi postni olish</button>
+          </div>
+
+          <div id="bcDraftPreviewBox" style="display:none;background:var(--surface-hover);border:1px dashed var(--line);border-radius:var(--radius-md);padding:12px;margin-bottom:14px;">
+            <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:4px;">✓ Tanlangan PostBot xabari:</div>
+            <div id="bcDraftPreviewText" style="font-size:12px;color:var(--text-muted);line-height:1.4;"></div>
           </div>
         </div>
 
@@ -1024,6 +1144,20 @@
             👥 Guruhga admin qilish
           </button>
         </div>
+      </div>
+
+      <!-- Detected Channels awaiting confirmation -->
+      <div id="detectedChannelsCard" style="display:none;background:linear-gradient(135deg,rgba(18,232,139,0.08) 0%,rgba(14,165,233,0.08) 100%);border:1px solid rgba(18,232,139,0.35);border-radius:var(--radius-md);padding:18px;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
+          <h3 style="margin:0;font-size:15px;color:var(--text);display:flex;align-items:center;gap:6px;">
+            <span>🔔</span> Yangi aniqlangan kanallar va guruhlar (Bot admin qilingan)
+          </h3>
+          <span class="badge-tag up" style="font-size:11px;">Tasdiqlash kutilmoqda</span>
+        </div>
+        <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 12px;">
+          Botni kanalingiz yoki guruhingizga admin qilganingiz uchun u bu yerda avtomatik paydo bo'ldi. Majburiy a'zolik turini tanlab, <b>✓ Tayyor</b> tugmasini bosing:
+        </p>
+        <div id="detectedChannelsList"></div>
       </div>
 
       <!-- Manual Add Channel Form -->
@@ -1210,6 +1344,114 @@
         </div>
       </div>
     </section>
+
+    <!-- 11. VIEW: FRAGMENT & TON -->
+    <section class="view-pane" id="fragment">
+      <div class="topbar">
+        <div class="page-title-box">
+          <h1>⚡ Fragment.com & TON Avtomatlashtirish</h1>
+          <p>Stars va Premium xaridlarini Fragment orqali avtomatik yetkazib berish sozlamalari</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-secondary" onclick="loadFragmentSettings()">↻ Yangilash</button>
+          <button class="btn btn-primary" onclick="saveFragmentSettings()">💾 Saqlash</button>
+        </div>
+      </div>
+
+      <!-- Balance & Auto Status Widgets -->
+      <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-bottom:18px;">
+        <div class="stat-card">
+          <div class="stat-head">
+            <span class="stat-label">Bot TON Hamyon Balansi</span>
+            <div class="stat-icon-wrap" style="color:#0098EA;">💎</div>
+          </div>
+          <div class="stat-value" id="fragWalletBalance">0.000 TON</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;" id="fragWalletAddressShort">Hamyon ulanmagan</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-head">
+            <span class="stat-label">Yetkazib Berish Rejimi</span>
+            <div class="stat-icon-wrap" style="color:var(--primary);">⚡</div>
+          </div>
+          <div class="stat-value" id="fragAutoBadge" style="font-size:18px;color:var(--success);">Avtomatik (Faol)</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Xariddan so'ng darhol Fragment orqali yetkaziladi</div>
+        </div>
+      </div>
+
+      <!-- Operational Mode Card -->
+      <div class="card" style="margin-bottom:18px;">
+        <h3 class="card-title" style="margin-bottom:6px;">Yetkazib Berish Qoidalari</h3>
+        <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 16px;">
+          Foydalanuvchi buyurtma berganda bot qanday harakat qilishini belgilang.
+        </p>
+
+        <div class="toggle-row" style="margin-bottom:14px;background:var(--surface);padding:14px;border-radius:var(--radius-md);border:1px solid var(--line);">
+          <div>
+            <div class="toggle-label" style="font-size:13.5px;font-weight:700;">⚡ Avtomatik xarid (Auto-fulfill)</div>
+            <div class="toggle-sub">Yoqilsa: Mijoz botdan sotib olishi bilan bot Fragment'ga to'lov qilib berilgan userga Stars/Premium topshiradi.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="fragIsAutoBuy" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row" style="background:var(--surface);padding:14px;border-radius:var(--radius-md);border:1px solid var(--line);">
+          <div>
+            <div class="toggle-label" style="font-size:13.5px;font-weight:700;">🧪 Simulyatsiya / Test rejimi</div>
+            <div class="toggle-sub">Yoqilsa: Haqiqiy TON hamyondan yechilmaydi, sinov uchun tranzaksiya simulyatsiya qilinadi.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="fragSimulationMode">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- TON Wallet & API Keys Card -->
+      <div class="card">
+        <h3 class="card-title" style="margin-bottom:14px;">TON Hamyon va Integratsiya Sozlamalari</h3>
+        <div class="form-grid">
+          <div class="field-group" style="grid-column: 1 / -1;">
+            <label class="field-label">Botning TON Hamyon Manzili (Address)</label>
+            <input id="fragTonAddress" class="custom-input" placeholder="EQ... yoki UQ... ko'rinishidagi Tonkeeper hamyon manzili">
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">
+              💡 Ushbu hamyonda yetarli TON bo'lishi kerak. Stars yoki Premium xaridi uchun to'lov Fragment smart kontraktiga shu hamyondan yuboriladi.
+            </div>
+          </div>
+
+          <div class="field-group" style="grid-column: 1 / -1;">
+            <label class="field-label">Hamyon Maxfiy So'zlari (24 ta Seed Phrase)</label>
+            <input id="fragTonMnemonic" type="password" class="custom-input" placeholder="so'z1 so'z2 so'z3 ... so'z24 (Xavfsiz saqlanadi)">
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">
+              🔒 Faqat avtomatik to'lovlarni imzolash uchun bot serverida shifrlangan saqlanadi.
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Blockchain Tarmog'i</label>
+            <select id="fragNetwork" class="custom-select">
+              <option value="mainnet">TON Mainnet (Asosiy tarmoq)</option>
+              <option value="testnet">TON Testnet (Sinov tarmog'i)</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Minimal TON ogohlantirish balansi</label>
+            <input id="fragMinBalance" type="number" step="0.1" class="custom-input" value="1.0" placeholder="1.0">
+          </div>
+
+          <div class="field-group" style="grid-column: 1 / -1;">
+            <label class="field-label">TonAPI Kaliti (Ixtiyoriy — balans va tarmoq tezligi uchun)</label>
+            <input id="fragTonApiKey" class="custom-input" placeholder="tonapi_...">
+          </div>
+        </div>
+
+        <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;">
+          <button class="btn btn-primary" onclick="saveFragmentSettings()">💾 Sozlamalarni saqlash</button>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -1311,6 +1553,7 @@
 
   function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
+    document.body.setAttribute('data-theme', theme);
     localStorage.setItem('stellar_admin_theme', theme);
 
     const isDark = (theme === 'dark');
@@ -1373,6 +1616,7 @@
     if(viewId === 'payments') loadPayments();
     if(viewId === 'referral') loadReferral();
     if(viewId === 'promos') loadPromocodes();
+    if(viewId === 'fragment') loadFragmentSettings();
     if(viewId === 'admins') loadAdmins();
   }
 
@@ -1492,42 +1736,111 @@
     document.getElementById('txtPremSell12').innerText = (base12 + m12).toLocaleString('ru-RU');
   }
 
-  let fragmentBaseGifts = { "bear": 50000, "heart": 68000, "rocket": 95000 };
+  let allCatalogGifts = [
+    { id: "bear", name: "Teddy Bear", icon: "🧸", base_uzs: 50000, price_uzs: 64000, type: "3d" },
+    { id: "heart", name: "Neon Heart", icon: "💖", base_uzs: 68000, price_uzs: 85000, type: "3d" },
+    { id: "rocket", name: "Cosmo Rocket", icon: "🚀", base_uzs: 95000, price_uzs: 120000, type: "3d" },
+    { id: "star", name: "Cosmic Star", icon: "⭐", base_uzs: 45000, price_uzs: 60000, type: "classic" },
+    { id: "ring", name: "Diamond Ring", icon: "💍", base_uzs: 130000, price_uzs: 165000, type: "3d" },
+    { id: "trophy", name: "Gold Trophy", icon: "🏆", base_uzs: 155000, price_uzs: 195000, type: "vip" },
+    { id: "yacht", name: "Luxury Yacht", icon: "🛥️", base_uzs: 220000, price_uzs: 270000, type: "vip" },
+    { id: "crown", name: "Ruby Crown", icon: "👑", base_uzs: 180000, price_uzs: 225000, type: "vip" },
+    { id: "medal", name: "Star Medal", icon: "🎖️", base_uzs: 75000, price_uzs: 95000, type: "classic" },
+    { id: "hat", name: "Magic Hat", icon: "🎩", base_uzs: 60000, price_uzs: 78000, type: "classic" },
+    { id: "eagle", name: "Flying Eagle", icon: "🦅", base_uzs: 88000, price_uzs: 110000, type: "3d" },
+    { id: "lion", name: "Golden Lion", icon: "🦁", base_uzs: 140000, price_uzs: 175000, type: "vip" }
+  ];
+
+  let showAllGifts = false;
+
+  function toggleShowAllGifts() {
+    showAllGifts = !showAllGifts;
+    const btn = document.getElementById('btnShowAllGifts');
+    if(btn) btn.innerText = showAllGifts ? "🔽 Kamroq ko'rsatish" : "📦 Barcha sovg'alarni chiqarish";
+    filterGiftsCatalog();
+  }
+
+  function filterGiftsCatalog() {
+    const q = (document.getElementById('inpGiftSearch')?.value || '').toLowerCase().trim();
+    const minP = parseInt(document.getElementById('inpGiftMinPrice')?.value) || 0;
+    const maxP = parseInt(document.getElementById('inpGiftMaxPrice')?.value) || Infinity;
+    const cat = document.getElementById('selGiftType')?.value || 'all';
+    const sort = document.getElementById('selGiftSort')?.value || 'default';
+
+    let list = allCatalogGifts.filter(g => {
+      if(q && !g.name.toLowerCase().includes(q) && !g.id.toLowerCase().includes(q)) return false;
+      if(g.price_uzs < minP) return false;
+      if(g.price_uzs > maxP) return false;
+      if(cat !== 'all' && g.type !== cat) return false;
+      return true;
+    });
+
+    if(sort === 'low_to_high') {
+      list.sort((a, b) => a.price_uzs - b.price_uzs);
+    } else if(sort === 'high_to_low') {
+      list.sort((a, b) => b.price_uzs - a.price_uzs);
+    } else if(sort === 'name') {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    const container = document.getElementById('giftsCatalogContainer');
+    const countEl = document.getElementById('txtGiftsCount');
+
+    const hasFilter = q || minP > 0 || maxP < Infinity || cat !== 'all' || sort !== 'default';
+    const displayList = (showAllGifts || hasFilter) ? list : list.slice(0, 3);
+
+    if(countEl) countEl.innerText = `Jami: ${displayList.length} ta sovg'a (Katalogda ${allCatalogGifts.length} ta)`;
+
+    if(!container) return;
+
+    if(displayList.length === 0) {
+      container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-muted);">Mos keluvchi sovg'alar topilmadi.</div>`;
+      return;
+    }
+
+    container.innerHTML = displayList.map(g => {
+      const profit = Math.max(0, g.price_uzs - g.base_uzs);
+      const typeLabel = g.type === '3d' ? '3D Sovg\'a' : (g.type === 'vip' ? 'VIP' : 'Klassik');
+      return `
+        <div class="field-group" style="background:var(--surface);padding:14px;border-radius:var(--radius-md);border:1px solid var(--line);">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <label class="field-label" style="font-size:13px;font-weight:700;">${g.name} ${g.icon}</label>
+            <span class="badge-tag" style="font-size:10px;background:var(--surface-hover);color:var(--text);border:1px solid var(--line);">${typeLabel}</span>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-muted);margin:4px 0 8px;">
+            Fragment tannarxi: <b id="base_${g.id}">${g.base_uzs.toLocaleString('ru-RU')}</b> so'm
+          </div>
+          <label class="field-label" style="font-size:11px;">Mijoz uchun individual narx (so'm):</label>
+          <input type="number" class="custom-input" value="${g.price_uzs}" oninput="updateSingleGiftPrice('${g.id}', this.value)">
+          <div style="margin-top:8px;font-size:12px;color:var(--primary);font-weight:700;">
+            Sof foyda: <span id="profit_${g.id}">${profit.toLocaleString('ru-RU')}</span> so'm
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function updateSingleGiftPrice(id, val) {
+    const num = parseInt(val) || 0;
+    const g = allCatalogGifts.find(x => x.id === id);
+    if(g) {
+      g.price_uzs = num;
+      const profitEl = document.getElementById(`profit_${id}`);
+      if(profitEl) profitEl.innerText = Math.max(0, num - g.base_uzs).toLocaleString('ru-RU');
+    }
+  }
 
   function applyGiftsGlobalMargin() {
-    const margin = parseInt(document.getElementById('inpGiftGlobalMargin').value) || 0;
-    const bBear = fragmentBaseGifts['bear'] || 50000;
-    const bHeart = fragmentBaseGifts['heart'] || 68000;
-    const bRocket = fragmentBaseGifts['rocket'] || 95000;
-
-    document.getElementById('inpGiftBear').value = bBear + margin;
-    document.getElementById('inpGiftHeart').value = bHeart + margin;
-    document.getElementById('inpGiftRocket').value = bRocket + margin;
-    updateGiftsPreview();
+    const margin = parseInt(document.getElementById('inpGiftGlobalMargin')?.value) || 0;
+    allCatalogGifts.forEach(g => {
+      g.price_uzs = g.base_uzs + margin;
+    });
+    filterGiftsCatalog();
+    showToast(`⚡ ${margin.toLocaleString('ru-RU')} so'm ustama barcha sovg'alarga qo'llandi!`);
   }
 
   function updateGiftsPreview() {
-    const bBear = fragmentBaseGifts['bear'] || 50000;
-    const bHeart = fragmentBaseGifts['heart'] || 68000;
-    const bRocket = fragmentBaseGifts['rocket'] || 95000;
-
-    const sBear = parseInt(document.getElementById('inpGiftBear').value) || bBear;
-    const sHeart = parseInt(document.getElementById('inpGiftHeart').value) || bHeart;
-    const sRocket = parseInt(document.getElementById('inpGiftRocket').value) || bRocket;
-
-    const elBaseBear = document.getElementById('txtGiftBaseBear');
-    if(elBaseBear) elBaseBear.innerText = bBear.toLocaleString('ru-RU');
-    const elBaseHeart = document.getElementById('txtGiftBaseHeart');
-    if(elBaseHeart) elBaseHeart.innerText = bHeart.toLocaleString('ru-RU');
-    const elBaseRocket = document.getElementById('txtGiftBaseRocket');
-    if(elBaseRocket) elBaseRocket.innerText = bRocket.toLocaleString('ru-RU');
-
-    const elProfitBear = document.getElementById('txtGiftProfitBear');
-    if(elProfitBear) elProfitBear.innerText = (sBear - bBear).toLocaleString('ru-RU');
-    const elProfitHeart = document.getElementById('txtGiftProfitHeart');
-    if(elProfitHeart) elProfitHeart.innerText = (sHeart - bHeart).toLocaleString('ru-RU');
-    const elProfitRocket = document.getElementById('txtGiftProfitRocket');
-    if(elProfitRocket) elProfitRocket.innerText = (sRocket - bRocket).toLocaleString('ru-RU');
+    filterGiftsCatalog();
   }
 
   document.getElementById('inpStarUnitPrice').addEventListener('input', updateStarsPreview);
@@ -1579,10 +1892,23 @@
         fragmentBaseGifts = data.fragment_gifts_base_uzs;
       }
 
-      if(data.gifts && data.gifts.length >= 3) {
-        document.getElementById('inpGiftBear').value = data.gifts[0].price_uzs || 64000;
-        document.getElementById('inpGiftHeart').value = data.gifts[1].price_uzs || 85000;
-        document.getElementById('inpGiftRocket').value = data.gifts[2].price_uzs || 120000;
+      if(data.gifts && Array.isArray(data.gifts)) {
+        data.gifts.forEach(saved => {
+          const found = allCatalogGifts.find(g => g.id === saved.id);
+          if(found) {
+            found.price_uzs = saved.price_uzs || found.price_uzs;
+            if(saved.name) found.name = saved.name;
+          } else {
+            allCatalogGifts.push({
+              id: saved.id,
+              name: saved.name || saved.id,
+              icon: saved.icon || '🎁',
+              base_uzs: saved.base_uzs || 50000,
+              price_uzs: saved.price_uzs || 65000,
+              type: saved.type || '3d'
+            });
+          }
+        });
       }
 
       const tbody = document.getElementById('discountsTableBody');
@@ -1599,7 +1925,7 @@
 
       updateStarsPreview();
       updatePremPreview();
-      updateGiftsPreview();
+      filterGiftsCatalog();
     } catch(e){ console.error(e); }
   }
 
@@ -1628,11 +1954,13 @@
         "6": base6 + m6,
         "12": base12 + m12
       },
-      gifts: [
-        { id: "bear", name: "Teddy Bear", price_uzs: parseInt(document.getElementById('inpGiftBear').value) || 64000, icon: "🧸" },
-        { id: "heart", name: "Neon Heart", price_uzs: parseInt(document.getElementById('inpGiftHeart').value) || 85000, icon: "💖" },
-        { id: "rocket", name: "Cosmo Rocket", price_uzs: parseInt(document.getElementById('inpGiftRocket').value) || 120000, icon: "🚀" }
-      ]
+      gifts: allCatalogGifts.map(g => ({
+        id: g.id,
+        name: g.name,
+        price_uzs: g.price_uzs,
+        icon: g.icon,
+        type: g.type
+      }))
     };
 
     const res = await fetch('/api/admin/pricing', {
@@ -1661,17 +1989,38 @@
         if(o.status === 'pending') pill = `<span class="badge-status pending">Kutilmoqda</span>`;
         if(o.status === 'cancel') pill = `<span class="badge-status cancel">Bekor</span>`;
 
+        // Fragment Fulfillment Badge
+        let fragPill = `<span class="badge-status pending">Kutilmoqda</span>`;
+        if(o.fulfillment_status === 'fulfilled') {
+          fragPill = `<span class="badge-status done" style="display:inline-flex;align-items:center;gap:3px;">⚡ Bajarildi</span>`;
+          if(o.fragment_tx_hash) {
+            fragPill += `<div style="font-size:10.5px;margin-top:2px;"><a href="https://tonscan.org/tx/${o.fragment_tx_hash}" target="_blank" style="color:var(--primary);text-decoration:none;">🔗 TX Chek</a></div>`;
+          }
+        } else if(o.fulfillment_status === 'processing') {
+          fragPill = `<span class="badge-status pending">⏳ Yuborilmoqda...</span>`;
+        } else if(o.fulfillment_status === 'failed') {
+          fragPill = `<span class="badge-status cancel" title="${o.fulfillment_error || ''}">⚠️ Xato</span>`;
+        }
+
+        const recipientDisplay = o.recipient_username ? (`@${o.recipient_username.replace('@','')}`) : o.username;
+
         return `
           <tr>
             <td><b>${o.order_code}</b></td>
             <td>${o.username}</td>
+            <td><b>${recipientDisplay}</b></td>
             <td>${o.item_title}</td>
             <td><b>${Number(o.total_price).toLocaleString('ru-RU')} so'm</b></td>
             <td>${o.created_at}</td>
             <td>${pill}</td>
-            <td>
-              ${o.status === 'pending' ? `<button class="btn btn-primary btn-sm" onclick="changeOrderStatus(${o.id}, 'done')">Bajarish</button>` : ''}
-              ${o.status !== 'cancel' ? `<button class="btn btn-danger btn-sm" onclick="changeOrderStatus(${o.id}, 'cancel')">Bekor</button>` : ''}
+            <td>${fragPill}</td>
+            <td style="white-space:nowrap;">
+              ${o.status === 'pending' ? `
+                <button class="btn btn-primary btn-sm" onclick="fulfillFragmentOrder(${o.id})" title="Fragment orqali bot hamyonidan yuborish" style="padding:4px 8px;font-size:11.5px;margin-right:4px;">⚡ Fragment</button>
+                ${o.fragment_payload ? `<a href="${o.fragment_payload}" target="_blank" class="btn btn-sm btn-secondary" style="background:#0098EA;color:#fff;border:none;text-decoration:none;padding:4px 8px;font-size:11.5px;margin-right:4px;" title="Tonkeeper orqali to'lash">💎 Tonkeeper</a>` : ''}
+                <button class="btn btn-secondary btn-sm" onclick="changeOrderStatus(${o.id}, 'done')" title="Bajarildi deb belgilash" style="padding:4px 7px;">✓</button>
+              ` : ''}
+              ${o.status !== 'cancel' ? `<button class="btn btn-danger btn-sm" onclick="changeOrderStatus(${o.id}, 'cancel')" title="Bekor qilish" style="padding:4px 7px;margin-left:4px;">✕</button>` : ''}
             </td>
           </tr>
         `;
@@ -1680,6 +2029,28 @@
   }
 
   document.getElementById('adminOrderSearch').addEventListener('input', loadAdminOrders);
+
+  async function fulfillFragmentOrder(orderId) {
+    if(!confirm("Ushbu buyurtmani Fragment orqali darhol yetkazib berilsinmi?")) return;
+    showToast("⚡ Fragment'ga so'rov yuborilmoqda...");
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/fulfill-fragment`, {
+        method: 'POST',
+        headers: adminHeaders()
+      });
+      const data = await res.json();
+      if(data.success && data.fulfilled) {
+        showToast("🎉 Buyurtma Fragment orqali muvaffaqiyatli yetkazildi!");
+      } else if(data.mode === 'waiting_payment') {
+        showToast("💎 Tonkeeper to'lov havolasi tayyorlandi!");
+      } else {
+        alert(data.error || "Fragment yetkazishda xatolik yuz berdi");
+      }
+      loadAdminOrders();
+    } catch(e) {
+      alert("Tarmoq xatosi!");
+    }
+  }
 
   async function changeOrderStatus(orderId, status) {
     if(!confirm(`Buyurtma holatini '${status}' ga o'zgartirasizmi?`)) return;
@@ -1692,6 +2063,67 @@
       showToast("Buyurtma holati yangilandi!");
       loadAdminOrders();
     }
+  }
+
+  // ================= FRAGMENT & TON HANDLERS ================= //
+  async function loadFragmentSettings() {
+    try {
+      const res = await fetch('/api/admin/fragment/settings', { headers: adminHeaders() });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      document.getElementById('fragIsAutoBuy').checked = Boolean(data.is_auto_buy);
+      document.getElementById('fragSimulationMode').checked = Boolean(data.simulation_mode);
+      document.getElementById('fragTonAddress').value = data.ton_wallet_address || '';
+      document.getElementById('fragTonMnemonic').value = data.ton_wallet_mnemonic_masked || '';
+      document.getElementById('fragNetwork').value = data.network || 'mainnet';
+      document.getElementById('fragMinBalance').value = data.min_ton_balance || 1.0;
+      document.getElementById('fragTonApiKey').value = data.tonapi_key || '';
+
+      const bal = Number(data.wallet_balance_ton || 0).toFixed(3);
+      document.getElementById('fragWalletBalance').innerText = `${bal} TON`;
+      if(data.ton_wallet_address) {
+        const addr = data.ton_wallet_address;
+        document.getElementById('fragWalletAddressShort').innerText = addr.substring(0, 8) + '...' + addr.substring(addr.length - 6);
+      } else {
+        document.getElementById('fragWalletAddressShort').innerText = "Hamyon kiritilmagan (Sinov rejimi)";
+      }
+
+      const autoBadge = document.getElementById('fragAutoBadge');
+      if(data.is_auto_buy) {
+        autoBadge.innerText = "Avtomatik (Faol)";
+        autoBadge.style.color = "var(--success)";
+      } else {
+        autoBadge.innerText = "Yarim avtomat (Admin tasdig'i)";
+        autoBadge.style.color = "var(--warn)";
+      }
+    } catch(e){ console.error("loadFragmentSettings error:", e); }
+  }
+
+  async function saveFragmentSettings() {
+    try {
+      const body = {
+        is_auto_buy: document.getElementById('fragIsAutoBuy').checked,
+        simulation_mode: document.getElementById('fragSimulationMode').checked,
+        ton_wallet_address: document.getElementById('fragTonAddress').value.trim(),
+        ton_wallet_mnemonic: document.getElementById('fragTonMnemonic').value.trim(),
+        network: document.getElementById('fragNetwork').value,
+        min_ton_balance: parseFloat(document.getElementById('fragMinBalance').value) || 1.0,
+        tonapi_key: document.getElementById('fragTonApiKey').value.trim()
+      };
+
+      const res = await fetch('/api/admin/fragment/settings', {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify(body)
+      });
+      if(res.ok) {
+        showToast("Fragment va TON sozlamalari saqlandi!");
+        loadFragmentSettings();
+      } else {
+        showToast("Xatolik yuz berdi!");
+      }
+    } catch(e){ console.error(e); }
   }
 
   function exportOrdersCSV() {
@@ -1734,13 +2166,36 @@
     });
   });
 
+  let selectedDraftId = null;
+
   function switchBcMode(mode) {
     broadcastMode = mode;
     document.querySelectorAll('#bcModePills .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
     const boxWrite = document.getElementById('bcBoxWrite');
     const boxPost = document.getElementById('bcBoxPost');
+    const boxPostBot = document.getElementById('bcBoxPostBot');
     if(boxWrite) boxWrite.style.display = (mode === 'write') ? 'block' : 'none';
     if(boxPost) boxPost.style.display = (mode === 'post_link') ? 'block' : 'none';
+    if(boxPostBot) boxPostBot.style.display = (mode === 'postbot') ? 'block' : 'none';
+  }
+
+  async function fetchLatestBotDraft() {
+    try {
+      const res = await fetch('/api/admin/broadcast/latest-draft', { headers: adminHeaders() });
+      const data = await res.json();
+      if(data.has_draft && data.draft) {
+        selectedDraftId = data.draft.id;
+        document.getElementById('bcPostBotCode').value = data.draft.text || `@PostBot Draft #${data.draft.id}`;
+        document.getElementById('bcDraftPreviewBox').style.display = 'block';
+        document.getElementById('bcDraftPreviewText').innerHTML = `
+          <b>Matn:</b> ${data.draft.text ? data.draft.text.substring(0, 100) + '...' : '(Media xabar)'}<br>
+          <b>Vaqt:</b> ${data.draft.created_at} (ID: ${data.draft.id})
+        `;
+        showToast("✓ Botga yuborilgan tayyor post yuklandi!");
+      } else {
+        alert("Botga hali hech qanday PostBot yoki forward posti tashlanmagan. Telegram botga o'tib istalgan postni yuboring.");
+      }
+    } catch(e){ alert("Tarmoq xatosi!"); }
   }
 
   function addBcButtonRow() {
@@ -1760,14 +2215,22 @@
     let text = null;
     let postLink = null;
     let photoUrl = null;
+    let postbotCode = null;
 
     if(broadcastMode === 'write') {
       text = document.getElementById('bcText').value.trim();
       if(!text) { alert("Xabar matnini kiriting!"); return; }
       photoUrl = document.getElementById('bcPhoto').value.trim() || null;
-    } else {
+    } else if(broadcastMode === 'post_link') {
       postLink = document.getElementById('bcPostLink').value.trim();
       if(!postLink) { alert("Kanal post havolasini kiriting!"); return; }
+    } else if(broadcastMode === 'postbot') {
+      postbotCode = document.getElementById('bcPostBotCode').value.trim();
+      if(!postbotCode && !selectedDraftId) {
+        alert("PostBot kodi yoki havolasini kiriting, yoki botdagi postni yuklang!");
+        return;
+      }
+      text = postbotCode;
     }
 
     const buttons = [];
@@ -1786,6 +2249,8 @@
       photo_url: photoUrl,
       post_link: postLink,
       forward_mode: isForward,
+      postbot_code: postbotCode,
+      draft_id: selectedDraftId,
       buttons: buttons.length ? buttons : null
     };
 
@@ -1858,14 +2323,52 @@
   }
 
   function renderChannelsTable(channels) {
-    document.getElementById('channelsCountText').innerText = `${channels.length} ta kanal`;
+    const detected = (channels || []).filter(c => c.is_detected);
+    const activeList = (channels || []).filter(c => !c.is_detected);
+
+    const detBox = document.getElementById('detectedChannelsCard');
+    const detList = document.getElementById('detectedChannelsList');
+    if(detBox && detList) {
+      if(detected.length > 0) {
+        detBox.style.display = 'block';
+        detList.innerHTML = detected.map(c => `
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);padding:14px;margin-top:10px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+              <div>
+                <b style="font-size:14px;color:var(--text);">${c.title}</b>
+                <span style="font-size:12px;color:var(--text-muted);margin-left:6px;"><code style="font-family:var(--font-mono);">${c.username_or_link}</code></span>
+              </div>
+              <span class="badge-tag up" style="font-size:10px;">⚡ Bot Admin Qilingan</span>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <div style="flex:1;min-width:220px;">
+                <label style="font-size:11.5px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600;">Qanday majburiy a'zolik qilmoqchisiz?</label>
+                <select id="selReqType_${c.id}" class="custom-select" style="width:100%;">
+                  <option value="ordinary" ${c.req_type === 'ordinary' ? 'selected' : ''}>Telegram kanal (Oddiy a'zolik)</option>
+                  <option value="group" ${c.req_type === 'group' ? 'selected' : ''}>Telegram guruh (Guruhga a'zolik)</option>
+                  <option value="join_request" ${c.req_type === 'join_request' ? 'selected' : ''}>So'rov orqali qo'shilish (Join Request)</option>
+                </select>
+              </div>
+              <div style="display:flex;gap:8px;align-items:flex-end;padding-top:16px;">
+                <button class="btn btn-primary btn-sm" onclick="confirmDetectedChannel(${c.id})">✓ Tayyor</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteChannel(${c.id})">✕ Bekor qilish</button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        detBox.style.display = 'none';
+      }
+    }
+
+    document.getElementById('channelsCountText').innerText = `${activeList.length} ta kanal`;
     const tbody = document.getElementById('channelsTableBody');
-    if(!channels || channels.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-faint);padding:30px;">Hozircha majburiy kanallar qo'shilmagan. Yuqoridagi tugma orqali botni kanalingizga admin qiling.</td></tr>`;
+    if(activeList.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-faint);padding:30px;">Hozircha faol majburiy kanallar yo'q. Yuqoridagi tugma orqali botni kanal yoki guruhingizga admin qiling.</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = channels.map(c => `
+    tbody.innerHTML = activeList.map(c => `
       <tr>
         <td><b>${c.title}</b></td>
         <td><code style="font-family:var(--font-mono);font-size:12px;">${c.username_or_link}</code></td>
@@ -1878,6 +2381,25 @@
         </td>
       </tr>
     `).join('');
+  }
+
+  async function confirmDetectedChannel(id) {
+    const sel = document.getElementById(`selReqType_${id}`);
+    const req_type = sel ? sel.value : 'ordinary';
+    try {
+      const res = await fetch(`/api/admin/channels/${id}/confirm`, {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify({ req_type })
+      });
+      if(res.ok) {
+        showToast("🎉 Kanal muvaffaqiyatli faollashtirildi!");
+        loadChannels();
+      } else {
+        const err = await res.json();
+        alert(err.detail || "Xatolik yuz berdi");
+      }
+    } catch(e){ alert("Tarmoq xatosi!"); }
   }
 
   async function addNewChannel() {
@@ -1946,8 +2468,8 @@
           <td>${p.current_uses} / ${p.max_uses}</td>
           <td><span class="badge-status ${p.is_active ? 'done' : 'cancel'}">${p.is_active ? 'Faol' : 'Nofaol'}</span></td>
           <td>
-            <button class="btn btn-secondary btn-sm" onclick="togglePromo(${p.id})">${p.is_active ? 'O\'chirish' : 'Yoqish'}</button>
-            <button class="btn btn-danger btn-sm" onclick="deletePromo(${p.id})">O'chirish</button>
+            <button class="btn btn-secondary btn-sm" onclick="togglePromo(${p.id})">${p.is_active ? '⏸ To\'xtatish' : '▶ Faollashtirish'}</button>
+            <button class="btn btn-danger btn-sm" onclick="deletePromo(${p.id})">🗑 O'chirish</button>
           </td>
         </tr>
       `).join('');
@@ -2179,6 +2701,18 @@
       if(!res.ok) return;
       const admins = await res.json();
       const tbody = document.getElementById('adminsTableBody');
+      if(!admins || admins.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align:center;padding:36px 20px;color:var(--text-muted);">
+              <div style="font-size:32px;margin-bottom:8px;">🛡️</div>
+              <div style="font-size:14px;font-weight:600;color:var(--text);">Hozircha qo'shimcha adminlar tayinlanmagan</div>
+              <div style="font-size:12px;color:var(--text-faint);margin-top:4px;">Yangi vakolatli admin qo'shish uchun yuqoridagi <b>＋ Yangi admin tayinlash</b> tugmasidan foydalaning.</div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
       tbody.innerHTML = admins.map(a => `
         <tr>
           <td><code style="font-family:var(--font-mono);font-size:12.5px;">${a.id}</code></td>
@@ -2197,6 +2731,7 @@
   initTheme();
   fetchBotInfo();
   loadDashboard();
+  filterGiftsCatalog();
 </script>
 </body>
 </html>

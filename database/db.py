@@ -3,7 +3,7 @@ from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from data import config
 from database.models import (
-    Base, PricingSetting, ReferralSetting, PaymentSetting, ChannelRequirement, User, PromoCode
+    Base, PricingSetting, ReferralSetting, PaymentSetting, ChannelRequirement, User, PromoCode, FragmentSetting
 )
 
 # SQLite path check if relative
@@ -33,6 +33,20 @@ async def init_db():
         except Exception:
             pass # column already exists
 
+        # Migrate orders fragment fields if not exists
+        for col_sql in [
+            "ALTER TABLE orders ADD COLUMN fragment_req_id VARCHAR(64)",
+            "ALTER TABLE orders ADD COLUMN fragment_payload TEXT",
+            "ALTER TABLE orders ADD COLUMN fragment_tx_hash VARCHAR(128)",
+            "ALTER TABLE orders ADD COLUMN fulfillment_status VARCHAR(32) DEFAULT 'pending'",
+            "ALTER TABLE orders ADD COLUMN fulfillment_error TEXT"
+        ]:
+            try:
+                from sqlalchemy import text
+                await conn.execute(text(col_sql))
+            except Exception:
+                pass
+
         # Migrate payment card fields if not exists
         for col_sql in [
             "ALTER TABLE payment_settings ADD COLUMN card_active BOOLEAN DEFAULT 1",
@@ -48,6 +62,20 @@ async def init_db():
 
     # Initialize default settings if not exists
     async with AsyncSessionLocal() as session:
+        # Check FragmentSetting
+        frag_setting = await session.get(FragmentSetting, 1)
+        if not frag_setting:
+            frag_setting = FragmentSetting(
+                id=1,
+                is_auto_buy=True,
+                ton_wallet_address="",
+                ton_wallet_mnemonic="",
+                tonapi_key="",
+                network="mainnet",
+                min_ton_balance=1.0,
+                simulation_mode=False
+            )
+            session.add(frag_setting)
         # Check PricingSetting
         pricing = await session.get(PricingSetting, 1)
         if not pricing:

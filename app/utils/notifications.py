@@ -156,7 +156,8 @@ async def send_admin_order_alert(
             await bot.send_message(
                 chat_id=admin_id,
                 text=text,
-                reply_markup=get_admin_keyboard()
+                reply_markup=get_admin_keyboard(),
+                disable_web_page_preview=True
             )
         except Exception as e:
             logger.warning(f"Adminga ({admin_id_str}) xabar yuborilmadi: {e}")

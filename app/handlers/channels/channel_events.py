@@ -31,14 +31,15 @@ async def on_bot_chat_member_updated(event: ChatMemberUpdated):
                 pass
 
         async with AsyncSessionLocal() as session:
-            # Register directly as active channel
+            # Register as newly detected channel awaiting admin confirmation
             await queries.add_or_update_channel(
                 session=session,
                 username_or_link=invite_link,
                 title=title,
                 req_type="ordinary",
                 chat_id=chat.id,
-                is_detected=False
+                is_detected=True,
+                is_active=False
             )
 
         # Notify admins
@@ -48,11 +49,11 @@ async def on_bot_chat_member_updated(event: ChatMemberUpdated):
                 await bot.send_message(
                     chat_id=admin_id,
                     text=(
-                        f"📣 <b>Yangi kanal qo'shildi va faollashtirildi!</b>\n\n"
+                        f"📣 <b>Bot yangi kanal yoki guruhga admin qilindi!</b>\n\n"
                         f"Nomi: <b>{title}</b>\n"
                         f"Havola: {invite_link}\n"
-                        f"ID: <code>{chat.id}</code>\n\n"
-                        f"✅ Kanal admin panel va majburiy obuna ro'yxatida avtomatik paydo bo'ldi."
+                        f"Chat ID: <code>{chat.id}</code>\n\n"
+                        f"⚙️ <i>Admin paneldan majburiy a'zolik turini tanlab, 'Tayyor' tugmasini bosing!</i>"
                     )
                 )
             except Exception:
