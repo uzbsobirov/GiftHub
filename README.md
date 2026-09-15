@@ -85,8 +85,8 @@ Ushbu loyiha **`stellar-bot-tz-v2.md`**, **`stellar-bot-mockup.html`** va **`ste
 2. **`.env` faylini sozlash:**
    `.env.example` dan nusxa olib `.env` yarating va `BOT_TOKEN` hamda `ADMINS` ID larini kiriting:
    ```env
-   BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
-   ADMINS=143547381
+   BOT_TOKEN=BOT_TOKEN_HERE
+   ADMINS=ADMIN_ID_HERE
    WEB_HOST=0.0.0.0
    WEB_PORT=8000
    WEB_APP_URL=http://localhost:8000/app
